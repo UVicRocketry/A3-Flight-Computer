@@ -3749,7 +3749,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "15d1d480-e92c-498d-99ec-6939c02e913d")
-		(property "Reference" "C8"
+		(property "Reference" "C19"
 			(at 203.327 73.66 0)
 			(effects
 				(font
@@ -3801,7 +3801,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C8")
+					(reference "C19")
 					(unit 1)
 				)
 			)
@@ -3817,7 +3817,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1eb95400-244d-4347-b66c-da5262f4ea01")
-		(property "Reference" "#PWR033"
+		(property "Reference" "#PWR045"
 			(at 50.8 132.08 0)
 			(effects
 				(font
@@ -3867,7 +3867,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR033")
+					(reference "#PWR045")
 					(unit 1)
 				)
 			)
@@ -3883,7 +3883,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "241efee2-055b-4864-ba02-8c635d4f5740")
-		(property "Reference" "C13"
+		(property "Reference" "C22"
 			(at 53.467 96.52 0)
 			(effects
 				(font
@@ -3935,7 +3935,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C13")
+					(reference "C22")
 					(unit 1)
 				)
 			)
@@ -3951,7 +3951,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3172f01d-185e-4ff4-9e5d-8e01178d792d")
-		(property "Reference" "D4"
+		(property "Reference" "D7"
 			(at 118.11 143.5099 90)
 			(effects
 				(font
@@ -4005,7 +4005,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "D4")
+					(reference "D7")
 					(unit 1)
 				)
 			)
@@ -4021,7 +4021,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "362db559-8139-4eb2-9f26-6b784468ec4a")
-		(property "Reference" "#PWR031"
+		(property "Reference" "#PWR042"
 			(at 176.53 100.33 0)
 			(effects
 				(font
@@ -4071,7 +4071,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR031")
+					(reference "#PWR042")
 					(unit 1)
 				)
 			)
@@ -4086,7 +4086,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4c8809af-c3b5-495d-99d8-6824caa5824f")
-		(property "Reference" "R4"
+		(property "Reference" "R11"
 			(at 64.77 33.0199 0)
 			(effects
 				(font
@@ -4140,7 +4140,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "R4")
+					(reference "R11")
 					(unit 1)
 				)
 			)
@@ -4155,7 +4155,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "505d749c-4225-42a4-8ac3-4c88fdfa217e")
-		(property "Reference" "C10"
+		(property "Reference" "C17"
 			(at 185.293 73.66 0)
 			(effects
 				(font
@@ -4207,7 +4207,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C10")
+					(reference "C17")
 					(unit 1)
 				)
 			)
@@ -4223,7 +4223,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "629374de-a30f-4e07-bee4-d5dc1d783823")
-		(property "Reference" "R3"
+		(property "Reference" "R10"
 			(at 53.34 33.0199 0)
 			(effects
 				(font
@@ -4277,7 +4277,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "R3")
+					(reference "R10")
 					(unit 1)
 				)
 			)
@@ -4293,7 +4293,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "77fd327f-2a3e-441e-892c-33deaef22410")
-		(property "Reference" "#PWR036"
+		(property "Reference" "#PWR048"
 			(at 50.8 157.48 0)
 			(effects
 				(font
@@ -4343,7 +4343,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR036")
+					(reference "#PWR048")
 					(unit 1)
 				)
 			)
@@ -4359,7 +4359,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7893d02a-d928-48ee-bffa-a2394c79f478")
-		(property "Reference" "#PWR029"
+		(property "Reference" "#PWR041"
 			(at 266.7 97.79 0)
 			(effects
 				(font
@@ -4409,7 +4409,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR029")
+					(reference "#PWR041")
 					(unit 1)
 				)
 			)
@@ -4425,7 +4425,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7e0f181d-7ba1-46d7-b855-26e56f115493")
-		(property "Reference" "#PWR034"
+		(property "Reference" "#PWR046"
 			(at 92.71 147.32 0)
 			(effects
 				(font
@@ -4475,7 +4475,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR034")
+					(reference "#PWR046")
 					(unit 1)
 				)
 			)
@@ -4491,7 +4491,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "809134bf-7d7c-4db8-a663-e02540e2b2e1")
-		(property "Reference" "#PWR018"
+		(property "Reference" "#PWR030"
 			(at 62.23 33.02 0)
 			(effects
 				(font
@@ -4541,7 +4541,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR018")
+					(reference "#PWR030")
 					(unit 1)
 				)
 			)
@@ -4557,7 +4557,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "888d75f1-4555-47d6-9edc-dc348f0c5721")
-		(property "Reference" "#PWR017"
+		(property "Reference" "#PWR029"
 			(at 55.88 33.02 0)
 			(effects
 				(font
@@ -4607,7 +4607,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR017")
+					(reference "#PWR029")
 					(unit 1)
 				)
 			)
@@ -4623,7 +4623,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "8af7d15b-7784-49e2-80f5-b234b850a5d1")
-		(property "Reference" "#PWR025"
+		(property "Reference" "#PWR035"
 			(at 180.34 83.82 0)
 			(effects
 				(font
@@ -4673,7 +4673,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR025")
+					(reference "#PWR035")
 					(unit 1)
 				)
 			)
@@ -4689,7 +4689,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a432d1e8-a0eb-4d1b-bb00-7958365e33e0")
-		(property "Reference" "#PWR026"
+		(property "Reference" "#PWR039"
 			(at 60.96 90.17 0)
 			(effects
 				(font
@@ -4739,7 +4739,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR026")
+					(reference "#PWR039")
 					(unit 1)
 				)
 			)
@@ -4755,7 +4755,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a6696efa-4504-48db-88ad-ff1ec103b2f2")
-		(property "Reference" "#PWR030"
+		(property "Reference" "#PWR043"
 			(at 58.42 105.41 0)
 			(effects
 				(font
@@ -4805,7 +4805,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR030")
+					(reference "#PWR043")
 					(unit 1)
 				)
 			)
@@ -4891,7 +4891,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "abc399fd-2c63-4d29-ac70-be55ecc09d71")
-		(property "Reference" "R5"
+		(property "Reference" "R12"
 			(at 104.14 133.3499 0)
 			(effects
 				(font
@@ -4945,7 +4945,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "R5")
+					(reference "R12")
 					(unit 1)
 				)
 			)
@@ -4961,7 +4961,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b9f963c4-538a-4277-a192-e7c6e0b7642c")
-		(property "Reference" "D3"
+		(property "Reference" "D6"
 			(at 118.11 133.3499 90)
 			(effects
 				(font
@@ -5015,7 +5015,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "D3")
+					(reference "D6")
 					(unit 1)
 				)
 			)
@@ -5118,7 +5118,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "c7813c77-4efd-48cb-9f59-e90dcacefa36")
-		(property "Reference" "C11"
+		(property "Reference" "C18"
 			(at 195.453 73.66 0)
 			(effects
 				(font
@@ -5170,7 +5170,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C11")
+					(reference "C18")
 					(unit 1)
 				)
 			)
@@ -5186,7 +5186,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c7e920d2-31c0-477e-a4c3-56a969f273c5")
-		(property "Reference" "#PWR028"
+		(property "Reference" "#PWR040"
 			(at 53.34 93.98 0)
 			(effects
 				(font
@@ -5236,7 +5236,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR028")
+					(reference "#PWR040")
 					(unit 1)
 				)
 			)
@@ -5252,7 +5252,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c8b26356-9b7a-4da7-bb27-08e2a8937d8f")
-		(property "Reference" "#PWR020"
+		(property "Reference" "#PWR031"
 			(at 176.53 67.31 0)
 			(effects
 				(font
@@ -5302,7 +5302,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR020")
+					(reference "#PWR031")
 					(unit 1)
 				)
 			)
@@ -5318,7 +5318,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "cb8d76f0-a218-4d02-bbe7-743fff97a1eb")
-		(property "Reference" "C9"
+		(property "Reference" "C20"
 			(at 213.487 73.66 0)
 			(effects
 				(font
@@ -5370,7 +5370,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C9")
+					(reference "C20")
 					(unit 1)
 				)
 			)
@@ -5386,7 +5386,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d50f95b7-815e-4253-87a5-1366d879631c")
-		(property "Reference" "R6"
+		(property "Reference" "R13"
 			(at 104.14 143.5099 0)
 			(effects
 				(font
@@ -5440,7 +5440,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "R6")
+					(reference "R13")
 					(unit 1)
 				)
 			)
@@ -5456,7 +5456,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d93dffc7-1d34-4356-8642-de294f291810")
-		(property "Reference" "#PWR035"
+		(property "Reference" "#PWR047"
 			(at 110.49 147.32 0)
 			(effects
 				(font
@@ -5506,7 +5506,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR035")
+					(reference "#PWR047")
 					(unit 1)
 				)
 			)
@@ -5667,7 +5667,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e0baf917-cf60-4354-be03-fb86d4c80247")
-		(property "Reference" "#PWR019"
+		(property "Reference" "#PWR032"
 			(at 223.52 69.85 0)
 			(effects
 				(font
@@ -5717,7 +5717,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR019")
+					(reference "#PWR032")
 					(unit 1)
 				)
 			)
@@ -5734,7 +5734,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e1d1efeb-a732-4100-8c59-5a553d896026")
-		(property "Reference" "#PWR023"
+		(property "Reference" "#PWR036"
 			(at 218.44 83.82 0)
 			(effects
 				(font
@@ -5784,7 +5784,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR023")
+					(reference "#PWR036")
 					(unit 1)
 				)
 			)
@@ -5800,7 +5800,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "e27d860e-dad7-4304-a777-33ec45b669ce")
-		(property "Reference" "C14"
+		(property "Reference" "C23"
 			(at 96.393 133.35 90)
 			(effects
 				(font
@@ -5852,7 +5852,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C14")
+					(reference "C23")
 					(unit 1)
 				)
 			)
@@ -5868,7 +5868,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e7c5ad87-251c-48a0-8060-e0acce744626")
-		(property "Reference" "#PWR021"
+		(property "Reference" "#PWR033"
 			(at 60.96 77.47 0)
 			(effects
 				(font
@@ -5918,7 +5918,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR021")
+					(reference "#PWR033")
 					(unit 1)
 				)
 			)
@@ -5934,7 +5934,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "eb81c42a-1c03-487b-bb88-1ab0d33cc8e0")
-		(property "Reference" "#PWR032"
+		(property "Reference" "#PWR044"
 			(at 223.52 107.95 0)
 			(effects
 				(font
@@ -5984,7 +5984,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR032")
+					(reference "#PWR044")
 					(unit 1)
 				)
 			)
@@ -6000,7 +6000,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ec060dd7-bd2f-47e2-9d7f-1052474a53c7")
-		(property "Reference" "#PWR027"
+		(property "Reference" "#PWR038"
 			(at 137.16 88.9 0)
 			(effects
 				(font
@@ -6050,7 +6050,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR027")
+					(reference "#PWR038")
 					(unit 1)
 				)
 			)
@@ -6172,7 +6172,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f25a5251-5cb4-47ba-b5e3-f0d9f5d224fa")
-		(property "Reference" "#PWR024"
+		(property "Reference" "#PWR037"
 			(at 123.19 87.63 0)
 			(effects
 				(font
@@ -6222,7 +6222,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR024")
+					(reference "#PWR037")
 					(unit 1)
 				)
 			)
@@ -6238,7 +6238,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f8bcdcb3-e5ff-4b45-8b70-42f2de0e643e")
-		(property "Reference" "#PWR022"
+		(property "Reference" "#PWR034"
 			(at 266.7 77.47 0)
 			(effects
 				(font
@@ -6288,7 +6288,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "#PWR022")
+					(reference "#PWR034")
 					(unit 1)
 				)
 			)
@@ -6304,7 +6304,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "f9123920-f35d-4abd-a72f-a7889056bb52")
-		(property "Reference" "C12"
+		(property "Reference" "C21"
 			(at 56.007 80.01 0)
 			(effects
 				(font
@@ -6356,7 +6356,7 @@
 		(instances
 			(project "A3-Flight-Computer-Hardware"
 				(path "/856f5827-1022-4082-a32b-80657c96ee1e/24d78cd1-8e93-4e71-b383-f5f1225b0366"
-					(reference "C12")
+					(reference "C21")
 					(unit 1)
 				)
 			)
