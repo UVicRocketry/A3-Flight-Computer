@@ -1,0 +1,6 @@
+{
+  "device": "STM32H523RCT7",
+  "core": "Cortex-M33",
+  "order": 0,
+  "toolchain": "GCC"
+}
