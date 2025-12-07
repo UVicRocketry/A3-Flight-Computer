@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32h5xx_hal_fdcan.h"
+#include "stm32h5xx_hal_sd.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -280,7 +281,7 @@ static void MX_FDCAN2_Init(void)
   }
   /* USER CODE BEGIN FDCAN2_Init 2 */
 
-  FDCAN_FilterTypeDef s;
+  
 
   /* USER CODE END FDCAN2_Init 2 */
 
