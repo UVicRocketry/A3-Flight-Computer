@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -69,6 +69,8 @@ void HAL_MspInit(void)
   /* USER CODE END MspInit 0 */
 
   /* System interrupt init*/
+  /* PendSV_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
 
@@ -94,7 +96,7 @@ void HAL_FDCAN_MspInit(FDCAN_HandleTypeDef* hfdcan)
   /** Initializes the peripherals clock
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_FDCAN;
-    PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL1Q;
+    PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_HSE;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
       Error_Handler();
@@ -234,6 +236,62 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     /* USER CODE BEGIN I2C3_MspDeInit 1 */
 
     /* USER CODE END I2C3_MspDeInit 1 */
+  }
+
+}
+
+/**
+  * @brief RTC MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hrtc: RTC handle pointer
+  * @retval None
+  */
+void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
+{
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+  if(hrtc->Instance==RTC)
+  {
+    /* USER CODE BEGIN RTC_MspInit 0 */
+
+    /* USER CODE END RTC_MspInit 0 */
+
+  /** Initializes the peripherals clock
+  */
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+    PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    /* Peripheral clock enable */
+    __HAL_RCC_RTC_CLK_ENABLE();
+    /* USER CODE BEGIN RTC_MspInit 1 */
+
+    /* USER CODE END RTC_MspInit 1 */
+
+  }
+
+}
+
+/**
+  * @brief RTC MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hrtc: RTC handle pointer
+  * @retval None
+  */
+void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
+{
+  if(hrtc->Instance==RTC)
+  {
+    /* USER CODE BEGIN RTC_MspDeInit 0 */
+
+    /* USER CODE END RTC_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_RTC_CLK_DISABLE();
+    /* USER CODE BEGIN RTC_MspDeInit 1 */
+
+    /* USER CODE END RTC_MspDeInit 1 */
   }
 
 }
@@ -640,64 +698,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     /* USER CODE BEGIN USART2_MspDeInit 1 */
 
     /* USER CODE END USART2_MspDeInit 1 */
-  }
-
-}
-
-/**
-  * @brief PCD MSP Initialization
-  * This function configures the hardware resources used in this example
-  * @param hpcd: PCD handle pointer
-  * @retval None
-  */
-void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
-{
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-  if(hpcd->Instance==USB_DRD_FS)
-  {
-    /* USER CODE BEGIN USB_DRD_FS_MspInit 0 */
-
-    /* USER CODE END USB_DRD_FS_MspInit 0 */
-
-  /** Initializes the peripherals clock
-  */
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
-    PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    /* Enable VDDUSB */
-    HAL_PWREx_EnableVddUSB();
-    /* Peripheral clock enable */
-    __HAL_RCC_USB_CLK_ENABLE();
-    /* USER CODE BEGIN USB_DRD_FS_MspInit 1 */
-
-    /* USER CODE END USB_DRD_FS_MspInit 1 */
-
-  }
-
-}
-
-/**
-  * @brief PCD MSP De-Initialization
-  * This function freeze the hardware resources used in this example
-  * @param hpcd: PCD handle pointer
-  * @retval None
-  */
-void HAL_PCD_MspDeInit(PCD_HandleTypeDef* hpcd)
-{
-  if(hpcd->Instance==USB_DRD_FS)
-  {
-    /* USER CODE BEGIN USB_DRD_FS_MspDeInit 0 */
-
-    /* USER CODE END USB_DRD_FS_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_USB_CLK_DISABLE();
-    /* USER CODE BEGIN USB_DRD_FS_MspDeInit 1 */
-
-    /* USER CODE END USB_DRD_FS_MspDeInit 1 */
   }
 
 }

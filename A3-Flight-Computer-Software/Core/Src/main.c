@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -18,9 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "app_filex.h"
-#include "stm32h5xx_hal_sd.h"
-#include "stm32h5xx_ll_sdmmc.h"
+#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +46,8 @@ FDCAN_HandleTypeDef hfdcan2;
 
 I2C_HandleTypeDef hi2c3;
 
+RTC_HandleTypeDef hrtc;
+
 SD_HandleTypeDef hsd1;
 
 TIM_HandleTypeDef htim2;
@@ -57,33 +57,31 @@ UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
-PCD_HandleTypeDef hpcd_USB_DRD_FS;
-
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MPU_Config(void);
+void MX_FREERTOS_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_FDCAN2_Init(void);
+static void MX_I2C3_Init(void);
+static void MX_ICACHE_Init(void);
+static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
 static void MX_UART5_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USB_PCD_Init(void);
-static void MX_I2C3_Init(void);
-static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-FX_MEDIA sd_card;
-uint32_t card_memory[FX_STM32_SD_DEFAULT_SECTOR_SIZE/sizeof(uint32_t)];
 
 /* USER CODE END 0 */
 
@@ -99,6 +97,9 @@ int main(void)
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
+
+  /* MPU Configuration--------------------------------------------------------*/
+  MPU_Config();
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
@@ -117,46 +118,28 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_FDCAN2_Init();
+  MX_I2C3_Init();
+  MX_ICACHE_Init();
+  MX_RTC_Init();
   MX_SDMMC1_SD_Init();
+  MX_TIM2_Init();
   MX_UART4_Init();
   MX_UART5_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_USB_PCD_Init();
-  MX_I2C3_Init();
-  MX_TIM2_Init();
-  MX_FileX_Init();
   /* USER CODE BEGIN 2 */
 
-  uint32_t status = 0;
-  uint32_t size = sizeof(card_memory);
-
-  uint8_t buffer[512];
-  uint8_t card_name[] = "SD_LOG";
-
-  HAL_SD_CardStatusTypeDef pStatus;
-  HAL_SD_CardInfoTypeDef pCardInfo;
-
-  status = HAL_SD_Init(&hsd1);
-  status = HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B);
-  status = HAL_SD_ConfigSpeedBusOperation(&hsd1, SDMMC_SPEED_MODE_AUTO);
-
-  status = HAL_SD_GetCardStatus(&hsd1, &pStatus);
-  HAL_SD_StateTypeDef state = HAL_SD_GetCardState(&hsd1);
-  status = HAL_SD_GetCardInfo(&hsd1, &pCardInfo);
-
-  // status = HAL_SD_ReadBlocks(&hsd1, buffer, 0x00, 1, 1000);
-
-  //status = fx_media_format(&sd_card, fx_stm32_sd_driver, 0, (VOID *) card_memory, sizeof(card_memory), "STM32_SDIO_DISK",1,0,0,122265600,512,1,1,1);
-
-  status =  fx_media_open(
-    &sd_card, 
-    &card_name[0], 
-    fx_stm32_sd_driver, 
-    0,
-    (VOID *) card_memory, 
-    sizeof(card_memory));
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+  /* Call init function for freertos objects (in app_freertos.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -184,22 +167,28 @@ void SystemClock_Config(void)
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
+  /** Configure LSE Drive Capability
+  *  Warning : Only applied when the LSE is disabled.
+  */
+  HAL_PWR_EnableBkUpAccess();
+  __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_HIGH);
+
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 31;
+  RCC_OscInitStruct.PLL.PLLM = 2;
+  RCC_OscInitStruct.PLL.PLLN = 40;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 2048;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -265,8 +254,6 @@ static void MX_FDCAN2_Init(void)
   }
   /* USER CODE BEGIN FDCAN2_Init 2 */
 
-  
-
   /* USER CODE END FDCAN2_Init 2 */
 
 }
@@ -320,6 +307,86 @@ static void MX_I2C3_Init(void)
 }
 
 /**
+  * @brief ICACHE Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ICACHE_Init(void)
+{
+
+  /* USER CODE BEGIN ICACHE_Init 0 */
+
+  /* USER CODE END ICACHE_Init 0 */
+
+  /* USER CODE BEGIN ICACHE_Init 1 */
+
+  /* USER CODE END ICACHE_Init 1 */
+
+  /** Enable instruction cache in 1-way (direct mapped cache)
+  */
+  if (HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_ICACHE_Enable() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ICACHE_Init 2 */
+
+  /* USER CODE END ICACHE_Init 2 */
+
+}
+
+/**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  RTC_PrivilegeStateTypeDef privilegeState = {0};
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  hrtc.Init.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE;
+  hrtc.Init.BinMode = RTC_BINARY_NONE;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  privilegeState.rtcPrivilegeFull = RTC_PRIVILEGE_FULL_NO;
+  privilegeState.backupRegisterPrivZone = RTC_PRIVILEGE_BKUP_ZONE_NONE;
+  privilegeState.backupRegisterStartZone2 = RTC_BKP_DR0;
+  privilegeState.backupRegisterStartZone3 = RTC_BKP_DR0;
+  if (HAL_RTCEx_PrivilegeModeSet(&hrtc, &privilegeState) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
+
+}
+
+/**
   * @brief SDMMC1 Initialization Function
   * @param None
   * @retval None
@@ -339,7 +406,7 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 50;
+  hsd1.Init.ClockDiv = 5;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
     Error_Handler();
@@ -592,42 +659,6 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
-  * @brief USB Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_Init 0 */
-
-  /* USER CODE END USB_Init 0 */
-
-  /* USER CODE BEGIN USB_Init 1 */
-
-  /* USER CODE END USB_Init 1 */
-  hpcd_USB_DRD_FS.Instance = USB_DRD_FS;
-  hpcd_USB_DRD_FS.Init.dev_endpoints = 8;
-  hpcd_USB_DRD_FS.Init.speed = USBD_FS_SPEED;
-  hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_DRD_FS.Init.Sof_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.battery_charging_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.vbus_sensing_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.bulk_doublebuffer_enable = DISABLE;
-  hpcd_USB_DRD_FS.Init.iso_singlebuffer_enable = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_DRD_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_Init 2 */
-
-  /* USER CODE END USB_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -668,13 +699,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pins : PA11 PA12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF9_FDCAN1;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Alternate = GPIO_AF10_USB;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -684,6 +715,62 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+ /* MPU Configuration */
+
+void MPU_Config(void)
+{
+  MPU_Region_InitTypeDef MPU_InitStruct = {0};
+  MPU_Attributes_InitTypeDef MPU_AttributesInit = {0};
+
+  /* Disables the MPU */
+  HAL_MPU_Disable();
+
+  /** Initializes and configures the Region 0 and the memory to be protected
+  */
+  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
+  MPU_InitStruct.BaseAddress = 0x08FFF000;
+  MPU_InitStruct.LimitAddress = 0x08FFFFFF;
+  MPU_InitStruct.AttributesIndex = MPU_ATTRIBUTES_NUMBER0;
+  MPU_InitStruct.AccessPermission = MPU_REGION_ALL_RO;
+  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
+
+  HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+  /** Initializes and configures the Attribute 0 and the memory to be protected
+  */
+  MPU_AttributesInit.Number = MPU_ATTRIBUTES_NUMBER0;
+  MPU_AttributesInit.Attributes = INNER_OUTER(MPU_NOT_CACHEABLE);
+
+  HAL_MPU_ConfigMemoryAttributes(&MPU_AttributesInit);
+  /* Enables the MPU */
+  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -699,6 +786,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number

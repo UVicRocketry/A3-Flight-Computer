@@ -1,5 +1,8 @@
 {
-  "device": "STM32H523RCT7",
+  "source": {
+    "sourceType": "STM32CubeMX"
+  },
+  "device": "STM32H523RET6",
   "core": "Cortex-M33",
   "order": 0,
   "toolchain": "GCC"
