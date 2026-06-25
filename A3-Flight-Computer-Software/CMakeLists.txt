@@ -40,14 +40,20 @@ add_subdirectory(cmake/stm32cubemx)
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
+    stm32-mw-fatfs/source
+    stm32-mw-fatfs/source/drivers/sd
+    stm32-mw-fatfs/source/drivers/template
 )
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     stm32-mw-fatfs/source/drivers/sd/sd_diskio_dma_rtos.c
+    stm32-mw-fatfs/source/diskio.c
     stm32-mw-fatfs/source/ff.c
     stm32-mw-fatfs/source/ff_gen_drv.c
     stm32-mw-fatfs/source/ffsystem_cmsis_os.c
+    Core/Src/file_system_handler.c
+    Core/Src/can_handler.c
 )
 
 # Add include paths

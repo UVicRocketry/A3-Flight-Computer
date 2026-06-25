@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
-#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,16 +43,13 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
-int8_t path;
-FATFS file_sys;
-
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
 osThreadId_t fileManagementTaskHandle;
 const osThreadAttr_t fileManagementTask_attributes = {
   .name = "fileManagementTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 512 * 4
 };
 /* Definitions for telemetryHandlerTask */
 osThreadId_t telemetryHandlerTaskHandle;
@@ -125,26 +121,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-/* USER CODE BEGIN Header_fileManagementTask */
-/**
-* @brief Function implementing the fileManagementTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_fileManagementTask */
-void fileManagementTask(void *argument)
-{
-  /* USER CODE BEGIN fileManagementTask */
 
-  FS_Init();
 
-  /* Infinite loop */
-  for(;;)
-  {
-    osMessageQueueGet(sensorDataHandle, , uint8_t *msg_prio, uint32_t timeout)
-  }
-  /* USER CODE END fileManagementTask */
-}
 
 /* USER CODE BEGIN Header_telemetryHandler */
 /**
@@ -184,19 +162,6 @@ void i2cSensorReadTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-
-void FS_Init(void){
-
-  //Link SD Card driver to FS
-  if(FATFS_LinkDriver(&SD_DMA_Driver, &path) != 0){
-    Error_Handler();
-  }
-
-  //Mount file sytem to device
-  if(f_mount(&file_sys, &path, 1) != 0){
-    Error_Handler();
-  }
-}
 
 /* USER CODE END Application */
 

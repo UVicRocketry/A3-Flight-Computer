@@ -33,8 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "ff.h"
-#include "sd_diskio_dma_rtos.h"
+#include "file_system_handler.h"
 
 /* USER CODE END Includes */
 
@@ -65,11 +64,7 @@ extern osMessageQueueId_t sensorDataHandle;
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
-static void FS_Init(void);
-
 /* USER CODE END FunctionPrototypes */
-
-void fileManagementTask(void *argument);
 void telemetryHandler(void *argument);
 void i2cSensorReadTask(void *argument);
 

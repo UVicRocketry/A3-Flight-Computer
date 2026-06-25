@@ -117,6 +117,9 @@ void HAL_FDCAN_MspInit(FDCAN_HandleTypeDef* hfdcan)
     GPIO_InitStruct.Alternate = GPIO_AF9_FDCAN2;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+    /* FDCAN2 interrupt Init */
+    HAL_NVIC_SetPriority(FDCAN2_IT0_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(FDCAN2_IT0_IRQn);
     /* USER CODE BEGIN FDCAN2_MspInit 1 */
 
     /* USER CODE END FDCAN2_MspInit 1 */
@@ -147,6 +150,8 @@ void HAL_FDCAN_MspDeInit(FDCAN_HandleTypeDef* hfdcan)
     */
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_12|GPIO_PIN_13);
 
+    /* FDCAN2 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(FDCAN2_IT0_IRQn);
     /* USER CODE BEGIN FDCAN2_MspDeInit 1 */
 
     /* USER CODE END FDCAN2_MspDeInit 1 */
@@ -355,6 +360,9 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
     GPIO_InitStruct.Alternate = GPIO_AF12_SDMMC1;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+    /* SDMMC1 interrupt Init */
+    HAL_NVIC_SetPriority(SDMMC1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(SDMMC1_IRQn);
     /* USER CODE BEGIN SDMMC1_MspInit 1 */
 
     /* USER CODE END SDMMC1_MspInit 1 */
@@ -392,6 +400,8 @@ void HAL_SD_MspDeInit(SD_HandleTypeDef* hsd)
 
     HAL_GPIO_DeInit(GPIOD, GPIO_PIN_2);
 
+    /* SDMMC1 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(SDMMC1_IRQn);
     /* USER CODE BEGIN SDMMC1_MspDeInit 1 */
 
     /* USER CODE END SDMMC1_MspDeInit 1 */
@@ -698,6 +708,64 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     /* USER CODE BEGIN USART2_MspDeInit 1 */
 
     /* USER CODE END USART2_MspDeInit 1 */
+  }
+
+}
+
+/**
+  * @brief PCD MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hpcd: PCD handle pointer
+  * @retval None
+  */
+void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
+{
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+  if(hpcd->Instance==USB_DRD_FS)
+  {
+    /* USER CODE BEGIN USB_DRD_FS_MspInit 0 */
+
+    /* USER CODE END USB_DRD_FS_MspInit 0 */
+
+  /** Initializes the peripherals clock
+  */
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+    PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    /* Enable VDDUSB */
+    HAL_PWREx_EnableVddUSB();
+    /* Peripheral clock enable */
+    __HAL_RCC_USB_CLK_ENABLE();
+    /* USER CODE BEGIN USB_DRD_FS_MspInit 1 */
+
+    /* USER CODE END USB_DRD_FS_MspInit 1 */
+
+  }
+
+}
+
+/**
+  * @brief PCD MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hpcd: PCD handle pointer
+  * @retval None
+  */
+void HAL_PCD_MspDeInit(PCD_HandleTypeDef* hpcd)
+{
+  if(hpcd->Instance==USB_DRD_FS)
+  {
+    /* USER CODE BEGIN USB_DRD_FS_MspDeInit 0 */
+
+    /* USER CODE END USB_DRD_FS_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_USB_CLK_DISABLE();
+    /* USER CODE BEGIN USB_DRD_FS_MspDeInit 1 */
+
+    /* USER CODE END USB_DRD_FS_MspDeInit 1 */
   }
 
 }

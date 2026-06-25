@@ -33,6 +33,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+#define CAN_TXRX_STANDBY  GPIO_PIN_15
+#define CAN_TXRX_SHUTDOWN GPIO_PIN_14
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,6 +46,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 FDCAN_HandleTypeDef hfdcan2;
+
+DMA_HandleTypeDef handle_GPDMA1_Channel7;
 
 I2C_HandleTypeDef hi2c3;
 
@@ -57,24 +62,26 @@ UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
+PCD_HandleTypeDef hpcd_USB_DRD_FS;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MPU_Config(void);
 void MX_FREERTOS_Init(void);
 static void MX_GPIO_Init(void);
+static void MX_GPDMA1_Init(void);
 static void MX_FDCAN2_Init(void);
 static void MX_I2C3_Init(void);
-static void MX_ICACHE_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
 static void MX_UART5_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_USB_PCD_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -98,9 +105,6 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* MPU Configuration--------------------------------------------------------*/
-  MPU_Config();
-
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
@@ -117,18 +121,26 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_GPDMA1_Init();
   MX_FDCAN2_Init();
   MX_I2C3_Init();
-  MX_ICACHE_Init();
   MX_RTC_Init();
   MX_SDMMC1_SD_Init();
   MX_TIM2_Init();
   MX_UART4_Init();
   MX_UART5_Init();
   MX_USART1_UART_Init();
+  MX_USB_PCD_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  FDCAN_TxHeaderTypeDef txHeader = {
+    .Identifier = 0x001,
+    .IdType = FDCAN_STANDARD_ID,
+    .TxFrameType = FDCAN_DATA_FRAME, 
+    .DataLength = 0
+  };
 
+  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -176,19 +188,21 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE
+                              |RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 2;
-  RCC_OscInitStruct.PLL.PLLN = 40;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 31;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
+  RCC_OscInitStruct.PLL.PLLFRACN = 2048;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -237,15 +251,15 @@ static void MX_FDCAN2_Init(void)
   hfdcan2.Init.AutoRetransmission = DISABLE;
   hfdcan2.Init.TransmitPause = DISABLE;
   hfdcan2.Init.ProtocolException = DISABLE;
-  hfdcan2.Init.NominalPrescaler = 16;
+  hfdcan2.Init.NominalPrescaler = 1;
   hfdcan2.Init.NominalSyncJumpWidth = 1;
-  hfdcan2.Init.NominalTimeSeg1 = 1;
-  hfdcan2.Init.NominalTimeSeg2 = 1;
+  hfdcan2.Init.NominalTimeSeg1 = 13;
+  hfdcan2.Init.NominalTimeSeg2 = 2;
   hfdcan2.Init.DataPrescaler = 1;
   hfdcan2.Init.DataSyncJumpWidth = 1;
   hfdcan2.Init.DataTimeSeg1 = 1;
   hfdcan2.Init.DataTimeSeg2 = 1;
-  hfdcan2.Init.StdFiltersNbr = 0;
+  hfdcan2.Init.StdFiltersNbr = 1;
   hfdcan2.Init.ExtFiltersNbr = 0;
   hfdcan2.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   if (HAL_FDCAN_Init(&hfdcan2) != HAL_OK)
@@ -254,7 +268,73 @@ static void MX_FDCAN2_Init(void)
   }
   /* USER CODE BEGIN FDCAN2_Init 2 */
 
+  FDCAN_FilterTypeDef filterConfig = {
+    .IdType = FDCAN_STANDARD_ID,
+    .FilterIndex = 0,
+    .FilterType = FDCAN_FILTER_RANGE,
+    .FilterID1 = 0x100,
+    .FilterID2 = 0x10B,
+    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0
+  };
+
+  HAL_FDCAN_ConfigFilter(&hfdcan2, &filterConfig);
+
+  //Start the FDCAN Module
+  if(HAL_FDCAN_Start(&hfdcan2) != HAL_OK){
+    Error_Handler();
+  }
+  // Ensure CAN transceiver is wokenup
+  HAL_GPIO_WritePin(GPIOB, CAN_TXRX_STANDBY, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CAN_TXRX_SHUTDOWN, GPIO_PIN_RESET);
+
+  HAL_FDCAN_ActivateNotification(&hfdcan2, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
   /* USER CODE END FDCAN2_Init 2 */
+
+}
+
+/**
+  * @brief GPDMA1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPDMA1_Init(void)
+{
+
+  /* USER CODE BEGIN GPDMA1_Init 0 */
+
+  /* USER CODE END GPDMA1_Init 0 */
+
+  /* Peripheral clock enable */
+  __HAL_RCC_GPDMA1_CLK_ENABLE();
+
+  /* USER CODE BEGIN GPDMA1_Init 1 */
+
+  /* USER CODE END GPDMA1_Init 1 */
+  handle_GPDMA1_Channel7.Instance = GPDMA1_Channel7;
+  handle_GPDMA1_Channel7.Init.Request = DMA_REQUEST_SW;
+  handle_GPDMA1_Channel7.Init.BlkHWRequest = DMA_BREQ_SINGLE_BURST;
+  handle_GPDMA1_Channel7.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  handle_GPDMA1_Channel7.Init.SrcInc = DMA_SINC_FIXED;
+  handle_GPDMA1_Channel7.Init.DestInc = DMA_DINC_FIXED;
+  handle_GPDMA1_Channel7.Init.SrcDataWidth = DMA_SRC_DATAWIDTH_BYTE;
+  handle_GPDMA1_Channel7.Init.DestDataWidth = DMA_DEST_DATAWIDTH_BYTE;
+  handle_GPDMA1_Channel7.Init.Priority = DMA_LOW_PRIORITY_LOW_WEIGHT;
+  handle_GPDMA1_Channel7.Init.SrcBurstLength = 1;
+  handle_GPDMA1_Channel7.Init.DestBurstLength = 1;
+  handle_GPDMA1_Channel7.Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
+  handle_GPDMA1_Channel7.Init.TransferEventMode = DMA_TCEM_BLOCK_TRANSFER;
+  handle_GPDMA1_Channel7.Init.Mode = DMA_NORMAL;
+  if (HAL_DMA_Init(&handle_GPDMA1_Channel7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_DMA_ConfigChannelAttributes(&handle_GPDMA1_Channel7, DMA_CHANNEL_NPRIV) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN GPDMA1_Init 2 */
+
+  /* USER CODE END GPDMA1_Init 2 */
 
 }
 
@@ -303,38 +383,6 @@ static void MX_I2C3_Init(void)
   /* USER CODE BEGIN I2C3_Init 2 */
 
   /* USER CODE END I2C3_Init 2 */
-
-}
-
-/**
-  * @brief ICACHE Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ICACHE_Init(void)
-{
-
-  /* USER CODE BEGIN ICACHE_Init 0 */
-
-  /* USER CODE END ICACHE_Init 0 */
-
-  /* USER CODE BEGIN ICACHE_Init 1 */
-
-  /* USER CODE END ICACHE_Init 1 */
-
-  /** Enable instruction cache in 1-way (direct mapped cache)
-  */
-  if (HAL_ICACHE_ConfigAssociativityMode(ICACHE_1WAY) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_ICACHE_Enable() != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ICACHE_Init 2 */
-
-  /* USER CODE END ICACHE_Init 2 */
 
 }
 
@@ -406,13 +454,16 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_4B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 5;
+  hsd1.Init.ClockDiv = 10;
   if (HAL_SD_Init(&hsd1) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
+  HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B);
+  HAL_SD_ConfigSpeedBusOperation(&hsd1, SDMMC_SPEED_MODE_AUTO);
+  
   /* USER CODE END SDMMC1_Init 2 */
 
 }
@@ -659,6 +710,42 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USB Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USB_PCD_Init(void)
+{
+
+  /* USER CODE BEGIN USB_Init 0 */
+
+  /* USER CODE END USB_Init 0 */
+
+  /* USER CODE BEGIN USB_Init 1 */
+
+  /* USER CODE END USB_Init 1 */
+  hpcd_USB_DRD_FS.Instance = USB_DRD_FS;
+  hpcd_USB_DRD_FS.Init.dev_endpoints = 8;
+  hpcd_USB_DRD_FS.Init.speed = USBD_FS_SPEED;
+  hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
+  hpcd_USB_DRD_FS.Init.Sof_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.low_power_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.lpm_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.battery_charging_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.vbus_sensing_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.bulk_doublebuffer_enable = DISABLE;
+  hpcd_USB_DRD_FS.Init.iso_singlebuffer_enable = DISABLE;
+  if (HAL_PCD_Init(&hpcd_USB_DRD_FS) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USB_Init 2 */
+
+  /* USER CODE END USB_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -699,14 +786,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF10_USB;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
@@ -715,40 +794,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
- /* MPU Configuration */
-
-void MPU_Config(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
-  MPU_Attributes_InitTypeDef MPU_AttributesInit = {0};
-
-  /* Disables the MPU */
-  HAL_MPU_Disable();
-
-  /** Initializes and configures the Region 0 and the memory to be protected
-  */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress = 0x08FFF000;
-  MPU_InitStruct.LimitAddress = 0x08FFFFFF;
-  MPU_InitStruct.AttributesIndex = MPU_ATTRIBUTES_NUMBER0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_ALL_RO;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-
-  /** Initializes and configures the Attribute 0 and the memory to be protected
-  */
-  MPU_AttributesInit.Number = MPU_ATTRIBUTES_NUMBER0;
-  MPU_AttributesInit.Attributes = INNER_OUTER(MPU_NOT_CACHEABLE);
-
-  HAL_MPU_ConfigMemoryAttributes(&MPU_AttributesInit);
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
@@ -786,7 +831,6 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number

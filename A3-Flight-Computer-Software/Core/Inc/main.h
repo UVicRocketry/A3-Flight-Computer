@@ -31,6 +31,11 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "ff.h"
+#include "sd_diskio_dma_rtos.h"
+#include <stdint.h>
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
