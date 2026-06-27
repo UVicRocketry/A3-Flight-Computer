@@ -43,6 +43,8 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
+extern RTC_HandleTypeDef hrtc;
+
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
 osThreadId_t fileManagementTaskHandle;
@@ -121,9 +123,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-
-
-
 /* USER CODE BEGIN Header_telemetryHandler */
 /**
 * @brief Function implementing the telemetryHandlerTask thread.
@@ -152,10 +151,21 @@ void telemetryHandler(void *argument)
 void i2cSensorReadTask(void *argument)
 {
   /* USER CODE BEGIN i2cSensorReadTask */
+  RTC_TimeTypeDef time;
+  RTC_DateTypeDef date;
+  HAL_StatusTypeDef stat;
+  AccelData_t acceleration;
+
+  ADXL375_Init();
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    taskENTER_CRITICAL();
+    stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
+    stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
+    taskEXIT_CRITICAL();
+    ADXL375_get_acceleration(&acceleration);
+    osDelay(10);
   }
   /* USER CODE END i2cSensorReadTask */
 }

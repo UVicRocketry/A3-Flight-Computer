@@ -32,14 +32,18 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "ff.h"
-#include "sd_diskio_dma_rtos.h"
-#include <stdint.h>
+#include "file_system_handler.h"
 
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+
+typedef struct {
+    FDCAN_RxHeaderTypeDef rxHeader;
+    RTC_TimeTypeDef time;
+    uint8_t data[8];
+} canPacket_t;
 
 /* USER CODE END ET */
 

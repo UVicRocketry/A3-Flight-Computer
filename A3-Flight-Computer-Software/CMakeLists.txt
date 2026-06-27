@@ -53,7 +53,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     stm32-mw-fatfs/source/ff_gen_drv.c
     stm32-mw-fatfs/source/ffsystem_cmsis_os.c
     Core/Src/file_system_handler.c
-    Core/Src/can_handler.c
+    Core/Src/sensors.c
 )
 
 # Add include paths

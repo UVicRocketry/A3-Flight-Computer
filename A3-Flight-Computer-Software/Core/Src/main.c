@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os2.h"
+#include "stm32h5xx_hal_i2c.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -90,6 +91,8 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+extern osMessageQueueId_t sensorDataHandle;
+
 /* USER CODE END 0 */
 
 /**
@@ -139,8 +142,9 @@ int main(void)
     .TxFrameType = FDCAN_DATA_FRAME, 
     .DataLength = 0
   };
-
+  uint8_t data = 0x00;
   HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -354,7 +358,7 @@ static void MX_I2C3_Init(void)
 
   /* USER CODE END I2C3_Init 1 */
   hi2c3.Instance = I2C3;
-  hi2c3.Init.Timing = 0x60808CD3;
+  hi2c3.Init.Timing = 0x10C043E5;
   hi2c3.Init.OwnAddress1 = 0;
   hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -399,6 +403,8 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 0 */
 
   RTC_PrivilegeStateTypeDef privilegeState = {0};
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
 
   /* USER CODE BEGIN RTC_Init 1 */
 
@@ -425,6 +431,37 @@ static void MX_RTC_Init(void)
   privilegeState.backupRegisterStartZone2 = RTC_BKP_DR0;
   privilegeState.backupRegisterStartZone3 = RTC_BKP_DR0;
   if (HAL_RTCEx_PrivilegeModeSet(&hrtc, &privilegeState) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN Check_RTC_BKUP */
+
+  /* USER CODE END Check_RTC_BKUP */
+
+  /** Initialize RTC and set the Time and Date
+  */
+  sTime.Hours = 0x0;
+  sTime.Minutes = 0x0;
+  sTime.Seconds = 0x0;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+  sDate.Month = RTC_MONTH_JANUARY;
+  sDate.Date = 0x1;
+  sDate.Year = 0x0;
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Enable the TimeStamp
+  */
+  if (HAL_RTCEx_SetTimeStamp(&hrtc, RTC_TIMESTAMPEDGE_RISING, RTC_TIMESTAMPPIN_DEFAULT) != HAL_OK)
   {
     Error_Handler();
   }
@@ -792,6 +829,33 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
+  FDCAN_RxHeaderTypeDef rxHeader;
+  RTC_TimeTypeDef timestamp;
+  uint8_t data[8];
+  canPacket_t payload;
+
+  if(HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, data) != HAL_OK){
+    
+  }
+
+  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BIN);
+  payload.rxHeader = rxHeader;
+  payload.time = timestamp;
+  payload.data[0] = data[0];
+  payload.data[1] = data[1];
+  payload.data[2] = data[2];
+  payload.data[3] = data[3];
+  payload.data[4] = data[4];
+  payload.data[5] = data[5];
+  payload.data[6] = data[6];
+  payload.data[7] = data[7];
+
+  osMessageQueuePut(sensorDataHandle, &payload, 0,0);
+  HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+
+}
 
 /* USER CODE END 4 */
 

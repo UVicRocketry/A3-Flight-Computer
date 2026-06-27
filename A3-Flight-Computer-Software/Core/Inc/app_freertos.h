@@ -33,8 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "file_system_handler.h"
-
+#include "sensors.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
