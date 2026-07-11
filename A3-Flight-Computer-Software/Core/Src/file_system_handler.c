@@ -74,6 +74,8 @@ static inline void mk_log_dir(void){
     f_close(&file);
   } else {
     stat = f_read(&file, buff, 8, &bytes_rw);
+    f_close(&file);
+    stat = f_open(&file, "open", FA_WRITE);
     open_count = atoi(buff);
     open_count++;
     uint32_t size = sprintf(buff, "%d", open_count);

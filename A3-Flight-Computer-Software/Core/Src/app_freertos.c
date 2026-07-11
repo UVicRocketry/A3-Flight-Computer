@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
+#include "stm32h5xx_hal_fdcan.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,6 +45,7 @@
 /* USER CODE BEGIN Variables */
 
 extern RTC_HandleTypeDef hrtc;
+extern FDCAN_HandleTypeDef hfdcan2;
 
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
@@ -100,7 +102,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (16, sizeof(uint16_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (16, sizeof(canPacket_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -136,7 +138,15 @@ void telemetryHandler(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+  // osDelay(4);
+  // FDCAN_TxHeaderTypeDef txHeader = {
+  //   .Identifier = 0x001,
+  //   .IdType = FDCAN_STANDARD_ID,
+  //   .TxFrameType = FDCAN_DATA_FRAME, 
+  //   .DataLength = 4
+  // };
+  // uint8_t data[8] = {0xBE, 0xEF, 0xBE, 0xEF};
+  // HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, data);
   }
   /* USER CODE END telemetryHandlerTask */
 }
@@ -160,10 +170,8 @@ void i2cSensorReadTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    taskENTER_CRITICAL();
     stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
     stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
-    taskEXIT_CRITICAL();
     ADXL375_get_acceleration(&acceleration);
     osDelay(10);
   }
