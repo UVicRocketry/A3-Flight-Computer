@@ -1,10 +1,11 @@
 #include "file_system_handler.h"
+#include "sensors.h"
 #include <stdio.h>
 
 int8_t path;
 FATFS file_sys;
 FIL file;
-uint8_t data[30];
+uint8_t data[500];
 uint8_t buff[15];
 
 extern osMessageQueueId_t sensorDataHandle;
@@ -23,26 +24,58 @@ void fileManagementTask(void *argument)
 {
   /* USER CODE BEGIN fileManagementTask */
   FRESULT stat = FR_NO_FILESYSTEM;
-  int count = 0;
   int size = 0;
   int bytes_written = 0;
-  canPacket_t payload;
+  TelemetryMessage_t payload;
+  float_t seconds;
+  uint8_t log_file_path[12];
+
   FS_Init();
   mk_log_dir();
   /* Infinite loop */
   for(;;)
   {
     if(osMessageQueueGet(sensorDataHandle, &payload, NULL, 3000) == osOK){
-      f_open(&file, "log.txt", FA_WRITE|FA_OPEN_APPEND);
+      seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
+      switch (payload.sensor_type) {
+        case SENSOR_STRAIN:
+          sprintf(log_file_path, "strain_%X.txt", payload.node_id);
+          f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
+          size = sprintf(data, "%d:%d:%f,%d,%d,%d\n", payload.time.Hours,
+                                                    payload.time.Minutes,
+                                                    seconds,
+                                                    payload.data.strain.left_gauge_uV,
+                                                    payload.data.strain.center_gauge_uV,
+                                                    payload.data.strain.right_gauge_uV);
+        
+          f_write(&file, data, size, &bytes_written);
+          f_close(&file);
+          break;
+        case SENSOR_TEMPERATURE:
+          break;
+        case SENSOR_RTD:
+          sprintf(log_file_path, "rtd_%X.txt", payload.node_id);
+          f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
+          size = sprintf(data, "%d:%d:%f,%d\n", payload.time.Hours,
+                                                payload.time.Minutes,
+                                                seconds,
+                                                payload.data.temperature_mv);
+        
+          f_write(&file, data, size, &bytes_written);
+          f_close(&file);
+          break;
+        case SENSOR_PRESSURE:
+          
+          break;
+        case SENSOR_ACCEL_ADXL375:
+        
+          break;
+        case SENSOR_GYRO:
 
-      size = sprintf(data, "%d:%d:%d.%d, %X\n", payload.time.Hours,
-                                              payload.time.Minutes,
-                                              payload.time.Seconds,
-                                              payload.time.SubSeconds,
-                                              payload.rxHeader.Identifier);
-      f_write(&file, data, size, &bytes_written);
-
-      f_close(&file);
+          break;
+        default:
+          break;
+      }
     }
   }
   /* USER CODE END fileManagementTask */

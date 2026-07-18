@@ -32,7 +32,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 #include "sensors.h"
 /* USER CODE END Includes */
 
@@ -48,7 +47,7 @@ extern "C" {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define ADXL375_EVENT 0x00000001
 /* USER CODE END PD */
 
 /* Exported macro -------------------------------------------------------------*/
@@ -64,6 +63,7 @@ extern osMessageQueueId_t sensorDataHandle;
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
+
 void telemetryHandler(void *argument);
 void i2cSensorReadTask(void *argument);
 

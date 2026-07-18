@@ -33,7 +33,6 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 
 #include "file_system_handler.h"
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

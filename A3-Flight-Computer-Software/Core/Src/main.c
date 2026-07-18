@@ -19,11 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os2.h"
-#include "stm32h5xx_hal_i2c.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "app_freertos.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,6 +35,9 @@
 
 #define CAN_TXRX_STANDBY  GPIO_PIN_15
 #define CAN_TXRX_SHUTDOWN GPIO_PIN_14
+
+#define CAN_STRAIN_FILTER_INDEX 0
+#define CAN_TEMP_FILTER_INDEX 1
 
 /* USER CODE END PD */
 
@@ -140,10 +142,10 @@ int main(void)
     .Identifier = 0x001,
     .IdType = FDCAN_STANDARD_ID,
     .TxFrameType = FDCAN_DATA_FRAME, 
-    .DataLength = 0
+    .DataLength = 4
   };
-  uint8_t data = 0x00;
-  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
+  uint8_t data[8] = {0xBE, 0xEF, 0xBE, 0xEF};
+  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, data);
 
   /* USER CODE END 2 */
 
@@ -283,6 +285,14 @@ static void MX_FDCAN2_Init(void)
 
   HAL_FDCAN_ConfigFilter(&hfdcan2, &filterConfig);
 
+  filterConfig.IdType = FDCAN_STANDARD_ID;
+  filterConfig.FilterIndex = 1;
+  filterConfig.FilterType = FDCAN_FILTER_RANGE;
+  filterConfig.FilterID1 = 0x110;
+  filterConfig.FilterID2 = 0x119;
+  filterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+
+  HAL_FDCAN_ConfigFilter(&hfdcan2, &filterConfig);
   //Start the FDCAN Module
   if(HAL_FDCAN_Start(&hfdcan2) != HAL_OK){
     Error_Handler();
@@ -310,6 +320,10 @@ static void MX_GPDMA1_Init(void)
 
   /* Peripheral clock enable */
   __HAL_RCC_GPDMA1_CLK_ENABLE();
+
+  /* GPDMA1 interrupt Init */
+    HAL_NVIC_SetPriority(GPDMA1_Channel7_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel7_IRQn);
 
   /* USER CODE BEGIN GPDMA1_Init 1 */
 
@@ -414,8 +428,8 @@ static void MX_RTC_Init(void)
   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.AsynchPrediv = 4;
+  hrtc.Init.SynchPrediv = 8191;
   hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
   hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
@@ -802,7 +816,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PA4 PA5 PA6 PA7 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
@@ -816,12 +830,28 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB2 PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pins : PB1 PB2 PB14 PB15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI6_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI7_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -833,30 +863,47 @@ static void MX_GPIO_Init(void)
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
   FDCAN_RxHeaderTypeDef rxHeader;
   RTC_TimeTypeDef timestamp;
+  RTC_DateTypeDef date;
   uint8_t data[8];
-  canPacket_t payload;
+  TelemetryMessage_t payload;
 
   if(HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, data) != HAL_OK){
-    
+    //implement error logging
   }
 
-  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BIN);
-  payload.rxHeader = rxHeader;
+  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BCD);
+  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
+  payload.node_id = rxHeader.Identifier;
   payload.time = timestamp;
-  payload.data[0] = data[0];
-  payload.data[1] = data[1];
-  payload.data[2] = data[2];
-  payload.data[3] = data[3];
-  payload.data[4] = data[4];
-  payload.data[5] = data[5];
-  payload.data[6] = data[6];
-  payload.data[7] = data[7];
+  switch(rxHeader.FilterIndex) {
+    case(CAN_STRAIN_FILTER_INDEX):
+      payload.sensor_type = SENSOR_STRAIN;
+      payload.data.strain.left_gauge_uV = data[1] << 8 | data[0];
+      payload.data.strain.center_gauge_uV = data[3] << 8 | data[2];
+      payload.data.strain.right_gauge_uV = data[5] << 8 | data[4];
+      break;
+    case (CAN_TEMP_FILTER_INDEX):
+      payload.sensor_type = SENSOR_RTD;
+      payload.data.temperature_mv = data[1] << 8 | data[0];
+      break;
+    default:
+      break;
+  }
 
   osMessageQueuePut(sensorDataHandle, &payload, 0,0);
   HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-
 }
 
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
+  switch (GPIO_Pin) {
+    case ADXL375_INT1_PIN:
+      osThreadFlagsSet(i2cSensorReadTaskHandle, ADXL375_EVENT);
+      break;
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+}
 /* USER CODE END 4 */
 
 /**

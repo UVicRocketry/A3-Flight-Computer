@@ -19,7 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
-#include "stm32h5xx_hal_fdcan.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -102,7 +101,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (16, sizeof(canPacket_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (16, sizeof(uint16_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -125,6 +124,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
+
+
+
 /* USER CODE BEGIN Header_telemetryHandler */
 /**
 * @brief Function implementing the telemetryHandlerTask thread.
@@ -138,15 +140,7 @@ void telemetryHandler(void *argument)
   /* Infinite loop */
   for(;;)
   {
-  // osDelay(4);
-  // FDCAN_TxHeaderTypeDef txHeader = {
-  //   .Identifier = 0x001,
-  //   .IdType = FDCAN_STANDARD_ID,
-  //   .TxFrameType = FDCAN_DATA_FRAME, 
-  //   .DataLength = 4
-  // };
-  // uint8_t data[8] = {0xBE, 0xEF, 0xBE, 0xEF};
-  // HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, data);
+    
   }
   /* USER CODE END telemetryHandlerTask */
 }
@@ -164,16 +158,19 @@ void i2cSensorReadTask(void *argument)
   RTC_TimeTypeDef time;
   RTC_DateTypeDef date;
   HAL_StatusTypeDef stat;
+  uint32_t flags;
   AccelData_t acceleration;
 
   ADXL375_Init();
   /* Infinite loop */
   for(;;)
   {
-    stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
-    stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
-    ADXL375_get_acceleration(&acceleration);
-    osDelay(10);
+    flags = osThreadFlagsWait(0x0000000, osFlagsWaitAny, 0);
+    if(flags & ADXL375_EVENT){
+      //stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
+      //stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
+      ADXL375_get_acceleration(&acceleration);
+    }
   }
   /* USER CODE END i2cSensorReadTask */
 }

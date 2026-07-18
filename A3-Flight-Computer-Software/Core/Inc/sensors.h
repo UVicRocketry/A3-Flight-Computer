@@ -2,15 +2,13 @@
 
 /*----------- Sensor Types -----------*/
 
-typedef enum
-{
+typedef enum {
     SENSOR_STRAIN,
     SENSOR_TEMPERATURE,
+    SENSOR_RTD,
     SENSOR_PRESSURE,
-    SENSOR_ACCEL,
-    SENSOR_GYRO,
-    SENSOR_SYSTEM
-
+    SENSOR_ACCEL_ADXL375,
+    SENSOR_GYRO
 } SensorType_t;
 
 
@@ -24,26 +22,11 @@ typedef struct {
     int16_t right_gauge_uV;
 } StrainData_t;
 
-// Strain Data
-typedef struct {
-    int16_t RTD_mV;
-} RTDData_t;
-
-// Temperature Data
-typedef struct {
-    float temperature_C;
-} TempData_t;
-
-// Presure Data
-typedef struct {
-    float pressure_Pa;
-} PressureData_t;
-
 // Accelerometer Data
 typedef struct {
-    float accel_x_G;
-    float accel_y_G;
-    float accel_z_G;
+    int16_t accel_x_G;
+    int16_t accel_y_G;
+    int16_t accel_z_G;
 } AccelData_t;
 
 // Gryoscope Data
@@ -59,11 +42,11 @@ typedef struct {
 
 typedef union {
     StrainData_t strain;
-    TempData_t temp;
-    PressureData_t pressure;
+    float_t temperature;
+    float_t pressure;
     AccelData_t accel;
     GyroData_t gyro;
-    RTDData_t temp_mv;
+    int16_t temperature_mv;
 } SensorPayload_t;
 
 
@@ -72,23 +55,14 @@ typedef union {
 
 typedef struct {
     RTC_TimeTypeDef time;
-
-    uint16_t mess_id;
-
     uint8_t node_id;
-
     SensorType_t sensor_type;
-
     SensorPayload_t data;
-
 } TelemetryMessage_t;
 
 
-// We could also add a enum for the type if you thought it was useful, or we can just dervie it from a message ID
-typedef enum {
-    BUS_CAN,
-    BUS_I2C,
-} BusType_t;
+#define ADXL375_INT1_PIN  GPIO_PIN_4
+#define ADXL375_INT2_PIN  GPIO_PIN_5
 
 #define ADXL375_WRITE_ADDR      0xA6
 #define ADXL375_READ_ADDR       0xA7
@@ -124,6 +98,7 @@ typedef enum {
 #define ADXL375_DEVICE_ID       0xE5
 #define ADXL375_800_BW          0b1101
 #define ADXL375_400_BW          0b1100
+#define ADXL375_100_BW          0b1010
 #define ADXL375_LOW_POWER       0b00010000
 
 
