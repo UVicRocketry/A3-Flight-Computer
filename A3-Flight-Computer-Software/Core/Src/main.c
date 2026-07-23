@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+#include "ftoa.h"
+#include "stm32h5xx_hal_rtc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,6 +40,12 @@
 
 #define CAN_STRAIN_FILTER_INDEX 0
 #define CAN_TEMP_FILTER_INDEX 1
+
+#define TELEM_UART USART1
+#define CAM1_UART UART4
+#define CAM2_UART USART2
+#define DEBUG_UART UART5
+
 
 /* USER CODE END PD */
 
@@ -138,6 +146,12 @@ int main(void)
   MX_USB_PCD_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_UART_Receive_IT(&huart1, NULL, 1);
+  HAL_UART_Receive_IT(&huart2, NULL, 1);
+  HAL_UART_Receive_IT(&huart4, NULL, 1);
+  HAL_UART_Receive_IT(&huart5, NULL, 1);
+
+  /* USER CODE END 2 */
   FDCAN_TxHeaderTypeDef txHeader = {
     .Identifier = 0x001,
     .IdType = FDCAN_STANDARD_ID,
@@ -147,8 +161,6 @@ int main(void)
   uint8_t data[8] = {0xBE, 0xEF, 0xBE, 0xEF};
   HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, data);
 
-  /* USER CODE END 2 */
-
   /* Init scheduler */
   osKernelInitialize();
   /* Call init function for freertos objects (in app_freertos.c) */
@@ -156,6 +168,7 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
+  
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -265,7 +278,7 @@ static void MX_FDCAN2_Init(void)
   hfdcan2.Init.DataSyncJumpWidth = 1;
   hfdcan2.Init.DataTimeSeg1 = 1;
   hfdcan2.Init.DataTimeSeg2 = 1;
-  hfdcan2.Init.StdFiltersNbr = 1;
+  hfdcan2.Init.StdFiltersNbr = 2;
   hfdcan2.Init.ExtFiltersNbr = 0;
   hfdcan2.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   if (HAL_FDCAN_Init(&hfdcan2) != HAL_OK)
@@ -428,7 +441,7 @@ static void MX_RTC_Init(void)
   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 4;
+  hrtc.Init.AsynchPrediv = 3;
   hrtc.Init.SynchPrediv = 8191;
   hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
@@ -871,7 +884,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     //implement error logging
   }
 
-  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BCD);
+  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BIN);
   HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
   payload.node_id = rxHeader.Identifier;
   payload.time = timestamp;
@@ -882,7 +895,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       payload.data.strain.center_gauge_uV = data[3] << 8 | data[2];
       payload.data.strain.right_gauge_uV = data[5] << 8 | data[4];
       break;
-    case (CAN_TEMP_FILTER_INDEX):
+    case(CAN_TEMP_FILTER_INDEX):
       payload.sensor_type = SENSOR_RTD;
       payload.data.temperature_mv = data[1] << 8 | data[0];
       break;
@@ -903,6 +916,15 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+  if(huart->Instance = TELEM_UART) {
+    HAL_UART_Receive_IT(huart, NULL, 1);
+  } else if (huart->Instance = CAM1_UART) {
+
+  } else if (huart->Instance = CAM2_UART) {
+    
+  } else if (huart->Instance = DEBUG_UART) {
+    
+  }
 }
 /* USER CODE END 4 */
 

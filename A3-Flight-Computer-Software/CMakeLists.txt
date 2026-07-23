@@ -56,6 +56,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     stm32-mw-fatfs/source/ffsystem_cmsis_os.c
     Core/Src/file_system_handler.c
     Core/Src/sensors.c
+    Core/Src/ftoa.c
 )
 
 # Add include paths

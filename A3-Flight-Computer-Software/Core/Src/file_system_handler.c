@@ -1,6 +1,8 @@
 #include "file_system_handler.h"
 #include "sensors.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include "ftoa.h"
 
 int8_t path;
 FATFS file_sys;
@@ -40,10 +42,11 @@ void fileManagementTask(void *argument)
       switch (payload.sensor_type) {
         case SENSOR_STRAIN:
           sprintf(log_file_path, "strain_%X.txt", payload.node_id);
+          ftoa(buff, seconds, NULL);
           f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-          size = sprintf(data, "%d:%d:%f,%d,%d,%d\n", payload.time.Hours,
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                     payload.time.Minutes,
-                                                    seconds,
+                                                    buff,
                                                     payload.data.strain.left_gauge_uV,
                                                     payload.data.strain.center_gauge_uV,
                                                     payload.data.strain.right_gauge_uV);
@@ -56,9 +59,10 @@ void fileManagementTask(void *argument)
         case SENSOR_RTD:
           sprintf(log_file_path, "rtd_%X.txt", payload.node_id);
           f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-          size = sprintf(data, "%d:%d:%f,%d\n", payload.time.Hours,
+          ftoa(buff, seconds, NULL);
+          size = snprintf(data, 500, "%d:%d:%s,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
-                                                seconds,
+                                                buff,
                                                 payload.data.temperature_mv);
         
           f_write(&file, data, size, &bytes_written);

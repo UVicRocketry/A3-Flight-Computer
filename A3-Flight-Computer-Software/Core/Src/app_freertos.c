@@ -101,7 +101,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (16, sizeof(uint16_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (16, sizeof(TelemetryMessage_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -166,6 +166,7 @@ void i2cSensorReadTask(void *argument)
   for(;;)
   {
     flags = osThreadFlagsWait(0x0000000, osFlagsWaitAny, 0);
+
     if(flags & ADXL375_EVENT){
       //stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
       //stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
