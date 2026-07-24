@@ -1,6 +1,5 @@
 #include "sensors.h"
 
-
 extern I2C_HandleTypeDef hi2c3;
 
 HAL_StatusTypeDef ADXL375_Init(void) {
@@ -56,7 +55,7 @@ HAL_StatusTypeDef ADXL375_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t le
         return HAL_ERROR;
     }
 
-    if(HAL_I2C_Master_Receive(&hi2c3, ADXL375_READ_ADDR, &pdata, length, 1000) != HAL_OK) {
+    if(HAL_I2C_Master_Receive(&hi2c3, ADXL375_READ_ADDR, pdata, length, 1000) != HAL_OK) {
         return HAL_ERROR;
     }
 
@@ -74,17 +73,91 @@ HAL_StatusTypeDef ADXL375_write_single_byte(uint8_t reg, uint8_t data) {
 }
 
 HAL_StatusTypeDef ADXL375_get_acceleration(AccelData_t *pAccelData) {
-    uint8_t xdata[2];
-    uint8_t ydata[2];
-    uint8_t zdata[2];
+    uint8_t xdata[2] = {0};
+    uint8_t ydata[2] = {0};
+    uint8_t zdata[2] = {0};
+
+
+    uint8_t stat = ADXL375_read_single_byte(ADXL375_INT_SOURCE);
 
     ADXL375_read_mult_byte(ADXL375_DATAX0, xdata, 2);
     ADXL375_read_mult_byte(ADXL375_DATAY0, ydata, 2);
     ADXL375_read_mult_byte(ADXL375_DATAZ0, zdata, 2);
 
-    pAccelData->accel_x_G = (int16_t)(xdata[1] << 8 | xdata[0]);
-    pAccelData->accel_y_G = (int16_t)(ydata[1] << 8 | ydata[0]);
-    pAccelData->accel_z_G = (int16_t)(zdata[1] << 8 | zdata[0]);
+    pAccelData->accel_x_G = (float_t)((int16_t)(xdata[1] << 8 | xdata[0]) * 0.049f);
+    pAccelData->accel_y_G = (float_t)((int16_t)(ydata[1] << 8 | ydata[0]) * 0.049f);
+    pAccelData->accel_z_G = (float_t)((int16_t)(zdata[1] << 8 | zdata[0]) * 0.049f);
+
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef BMP581_Init(void){
+    uint8_t data = BMP581_read_single_byte(BMP581_CHIP_ID_REG);
+    if(data != BMP581_CHIP_ID){
+        return HAL_ERROR;
+    }
+
+    data = BMP581_read_single_byte(BMP581_INT_CONFIG);
+    data &= ~(BMP581_INT_ENABLE);
+    BMP581_write_single_byte(BMP581_INT_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_ODR_CONFIG);
+    data |= (BMP581_ODR_120HZ) << 2;
+    BMP581_write_single_byte(BMP581_ODR_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_OSR_CONFIG);
+    data |= BMP581_PRES_ENABLE | (BMP581_OSR_8X) << 3 | (BMP581_OSR_8X);
+    BMP581_write_single_byte(BMP581_OSR_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_OSR_EFF);
+
+    data = BMP581_read_single_byte(BMP581_INT_SOURCE);
+    data |= BMP581_INT_DRDY;
+    BMP581_write_single_byte(BMP581_INT_SOURCE, data);
+
+    data = BMP581_read_single_byte(BMP581_INT_CONFIG);
+    data &= ~(BMP581_INT_PUSH_PULL);
+    data |= BMP581_INT_POL_HIGH | BMP581_INT_ENABLE;
+    BMP581_write_single_byte(BMP581_INT_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_ODR_CONFIG);
+    data |= BMP581_DEEPSTDBY_DIS | BMP581_MODE_NORMAL;
+    BMP581_write_single_byte(BMP581_ODR_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_INT_STATUS);
+}
+
+uint8_t BMP581_read_single_byte(uint8_t reg){
+    uint8_t data;
+    if(HAL_I2C_Master_Transmit(&hi2c3, BMP581_WRITE_ADDR, &reg, 1, 1000) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    if(HAL_I2C_Master_Receive(&hi2c3, BMP581_READ_ADDR, &data, 1, 1000) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    return data;
+}
+
+HAL_StatusTypeDef BMP581_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length) {
+    if(HAL_I2C_Master_Transmit(&hi2c3, BMP581_WRITE_ADDR, &reg, 1, 1000) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    if(HAL_I2C_Master_Receive(&hi2c3, BMP581_READ_ADDR, pdata, length, 1000) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data) {
+    uint8_t pdata[2] = {reg, data};
+
+    if(HAL_I2C_Master_Transmit(&hi2c3, BMP581_WRITE_ADDR, pdata, 2, 1000) != HAL_OK) {
+        return HAL_ERROR;
+    }
 
     return HAL_OK;
 }

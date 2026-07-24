@@ -23,8 +23,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
-#include "ftoa.h"
-#include "stm32h5xx_hal_rtc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -152,14 +150,6 @@ int main(void)
   HAL_UART_Receive_IT(&huart5, NULL, 1);
 
   /* USER CODE END 2 */
-  FDCAN_TxHeaderTypeDef txHeader = {
-    .Identifier = 0x001,
-    .IdType = FDCAN_STANDARD_ID,
-    .TxFrameType = FDCAN_DATA_FRAME, 
-    .DataLength = 4
-  };
-  uint8_t data[8] = {0xBE, 0xEF, 0xBE, 0xEF};
-  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, data);
 
   /* Init scheduler */
   osKernelInitialize();
@@ -168,7 +158,6 @@ int main(void)
 
   /* Start scheduler */
   osKernelStart();
-  
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -278,7 +267,7 @@ static void MX_FDCAN2_Init(void)
   hfdcan2.Init.DataSyncJumpWidth = 1;
   hfdcan2.Init.DataTimeSeg1 = 1;
   hfdcan2.Init.DataTimeSeg2 = 1;
-  hfdcan2.Init.StdFiltersNbr = 2;
+  hfdcan2.Init.StdFiltersNbr = 1;
   hfdcan2.Init.ExtFiltersNbr = 0;
   hfdcan2.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   if (HAL_FDCAN_Init(&hfdcan2) != HAL_OK)
@@ -441,7 +430,7 @@ static void MX_RTC_Init(void)
   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 3;
+  hrtc.Init.AsynchPrediv = 4;
   hrtc.Init.SynchPrediv = 8191;
   hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
@@ -468,20 +457,20 @@ static void MX_RTC_Init(void)
 
   /** Initialize RTC and set the Time and Date
   */
-  sTime.Hours = 0x0;
-  sTime.Minutes = 0x0;
-  sTime.Seconds = 0x0;
+  sTime.Hours = 0;
+  sTime.Minutes = 0;
+  sTime.Seconds = 0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
   sDate.WeekDay = RTC_WEEKDAY_MONDAY;
   sDate.Month = RTC_MONTH_JANUARY;
-  sDate.Date = 0x1;
-  sDate.Year = 0x0;
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  sDate.Date = 1;
+  sDate.Year = 0;
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
   {
     Error_Handler();
   }
@@ -878,13 +867,13 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   RTC_TimeTypeDef timestamp;
   RTC_DateTypeDef date;
   uint8_t data[8];
-  TelemetryMessage_t payload;
+  SensorPayload_t payload;
 
   if(HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, data) != HAL_OK){
     //implement error logging
   }
 
-  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BCD);
   HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
   payload.node_id = rxHeader.Identifier;
   payload.time = timestamp;
@@ -911,6 +900,9 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
   switch (GPIO_Pin) {
     case ADXL375_INT1_PIN:
       osThreadFlagsSet(i2cSensorReadTaskHandle, ADXL375_EVENT);
+      break;
+    case BMP581_INT_PIN:
+      osThreadFlagsSet(i2cSensorReadTaskHandle, BMP581_EVENT);
       break;
   }
 }

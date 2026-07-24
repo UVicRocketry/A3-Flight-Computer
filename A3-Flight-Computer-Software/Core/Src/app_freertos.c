@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
+#include <stdint.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -101,7 +102,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (16, sizeof(TelemetryMessage_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (16, sizeof(SensorPayload_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -124,8 +125,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-
-
 
 /* USER CODE BEGIN Header_telemetryHandler */
 /**
@@ -159,18 +158,32 @@ void i2cSensorReadTask(void *argument)
   RTC_DateTypeDef date;
   HAL_StatusTypeDef stat;
   uint32_t flags;
+  SensorPayload_t payload;
   AccelData_t acceleration;
 
   ADXL375_Init();
+  BMP581_Init();
   /* Infinite loop */
   for(;;)
   {
     flags = osThreadFlagsWait(0x0000000, osFlagsWaitAny, 0);
 
     if(flags & ADXL375_EVENT){
-      //stat = HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BCD);
-      //stat = HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
-      ADXL375_get_acceleration(&acceleration);
+      HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+
+      if(ADXL375_get_acceleration(&acceleration) == HAL_OK){
+        payload.sensor_type = SENSOR_ACCEL_ADXL375;
+        payload.time = time;
+        payload.data.accel = acceleration;
+
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+      } else {
+        //Log error
+      }
+    }
+    if (flags & BMP581_EVENT) {
+      uint8_t data = BMP581_read_single_byte(BMP581_INT_STATUS);
     }
   }
   /* USER CODE END i2cSensorReadTask */

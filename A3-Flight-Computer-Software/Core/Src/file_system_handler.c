@@ -1,5 +1,6 @@
 #include "file_system_handler.h"
 #include "sensors.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "ftoa.h"
@@ -28,9 +29,13 @@ void fileManagementTask(void *argument)
   FRESULT stat = FR_NO_FILESYSTEM;
   int size = 0;
   int bytes_written = 0;
-  TelemetryMessage_t payload;
+  SensorPayload_t payload;
   float_t seconds;
   uint8_t log_file_path[12];
+  uint8_t seconds_buf[20];
+  uint8_t float_buf_1[20];
+  uint8_t float_buf_2[20];
+  uint8_t float_buf_3[20];
 
   FS_Init();
   mk_log_dir();
@@ -39,40 +44,40 @@ void fileManagementTask(void *argument)
   {
     if(osMessageQueueGet(sensorDataHandle, &payload, NULL, 3000) == osOK){
       seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
+      ftoa(seconds, seconds_buf,6);
       switch (payload.sensor_type) {
         case SENSOR_STRAIN:
-          sprintf(log_file_path, "strain_%X.txt", payload.node_id);
-          ftoa(buff, seconds, NULL);
-          f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
+          sprintf(log_file_path, "strain-%X.csv", payload.node_id);
           size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                     payload.time.Minutes,
-                                                    buff,
+                                                    seconds_buf,
                                                     payload.data.strain.left_gauge_uV,
                                                     payload.data.strain.center_gauge_uV,
                                                     payload.data.strain.right_gauge_uV);
-        
-          f_write(&file, data, size, &bytes_written);
-          f_close(&file);
           break;
         case SENSOR_TEMPERATURE:
           break;
         case SENSOR_RTD:
-          sprintf(log_file_path, "rtd_%X.txt", payload.node_id);
-          f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-          ftoa(buff, seconds, NULL);
+          sprintf(log_file_path, "rtd-%X.csv", payload.node_id);
           size = snprintf(data, 500, "%d:%d:%s,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
-                                                buff,
+                                                seconds_buf,
                                                 payload.data.temperature_mv);
-        
-          f_write(&file, data, size, &bytes_written);
-          f_close(&file);
           break;
         case SENSOR_PRESSURE:
           
           break;
         case SENSOR_ACCEL_ADXL375:
-        
+          sprintf(log_file_path, "adxl375.csv");
+          ftoa(payload.data.accel.accel_x_G, float_buf_1, 4);
+          ftoa(payload.data.accel.accel_y_G, float_buf_2, 4);
+          ftoa(payload.data.accel.accel_z_G, float_buf_3, 4);
+          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+                                                payload.time.Minutes,
+                                                seconds_buf,
+                                                float_buf_1,
+                                                float_buf_2,
+                                                float_buf_3);
           break;
         case SENSOR_GYRO:
 
@@ -80,6 +85,10 @@ void fileManagementTask(void *argument)
         default:
           break;
       }
+
+      f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
+      f_write(&file, data, size, &bytes_written);
+      f_close(&file);
     }
   }
   /* USER CODE END fileManagementTask */

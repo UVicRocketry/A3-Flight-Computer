@@ -1,3 +1,2 @@
 
-unsigned int ftoa(char *s, float f, int *_K);
-unsigned int ftoahex(char *s, float f, int *K);
+char * ftoa(double f, char * buf, int precision);
