@@ -19,7 +19,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
-#include <stdint.h>
+#include "cmsis_os2.h"
+#include "stm32h5xx_hal_gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -69,10 +70,20 @@ const osThreadAttr_t i2cSensorReadTask_attributes = {
   .priority = (osPriority_t) osPriorityLow,
   .stack_size = 128 * 4
 };
+/* Definitions for genericTimer */
+osTimerId_t genericTimerHandle;
+const osTimerAttr_t genericTimer_attributes = {
+  .name = "genericTimer"
+};
 /* Definitions for sensorData */
 osMessageQueueId_t sensorDataHandle;
 const osMessageQueueAttr_t sensorData_attributes = {
   .name = "sensorData"
+};
+/* Definitions for logQueue */
+osMessageQueueId_t logQueueHandle;
+const osMessageQueueAttr_t logQueue_attributes = {
+  .name = "logQueue"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,12 +108,16 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
+  /* creation of genericTimer */
+  genericTimerHandle = osTimerNew(genericCallback01, osTimerOnce, NULL, &genericTimer_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
   sensorDataHandle = osMessageQueueNew (16, sizeof(SensorPayload_t), &sensorData_attributes);
+  /* creation of logQueue */
+  //logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -136,10 +151,42 @@ void MX_FREERTOS_Init(void) {
 void telemetryHandler(void *argument)
 {
   /* USER CODE BEGIN telemetryHandlerTask */
+  cam_status_t cam1_stat;
+  cam_status_t cam2_stat;
+
+  uint8_t stop_sent = 0;
+  
   /* Infinite loop */
+  cam1_stat = camera_start(CAM1);
+
+  if(cam1_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  }
+
+  cam2_stat = camera_start(CAM2);
+  
+  if(cam2_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  }
+
   for(;;)
   {
-    
+    osDelay(100);
+    cam1_stat = camera_status(CAM1);
+    if(cam1_stat == REPLY_INVALID_CMD || cam1_stat == REPLY_ERROR){
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+    }
+
+    cam2_stat = camera_status(CAM2);
+    if(cam1_stat == REPLY_INVALID_CMD || cam1_stat == REPLY_ERROR){
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+    }
+
+    if(cam1_stat == REPLY_RECORDING || cam2_stat == REPLY_RECORDING && stop_sent != 1){
+      osTimerStart(genericTimerHandle, 15 * 1000);
+      stop_sent = 1;
+    }
+
   }
   /* USER CODE END telemetryHandlerTask */
 }
@@ -160,6 +207,8 @@ void i2cSensorReadTask(void *argument)
   uint32_t flags;
   SensorPayload_t payload;
   AccelData_t acceleration;
+  float_t temperature;
+  float_t pressure;
 
   ADXL375_Init();
   BMP581_Init();
@@ -184,9 +233,26 @@ void i2cSensorReadTask(void *argument)
     }
     if (flags & BMP581_EVENT) {
       uint8_t data = BMP581_read_single_byte(BMP581_INT_STATUS);
+
+      BMP581_get_temperature_pressure(&temperature, &pressure);
     }
   }
   /* USER CODE END i2cSensorReadTask */
+}
+
+/* genericCallback01 function */
+void genericCallback01(void *argument)
+{
+  cam_status_t cam1_stat;
+  cam_status_t cam2_stat;
+  /* USER CODE BEGIN genericCallback01 */
+  cam1_stat = camera_stop( CAM1);
+  cam2_stat = camera_stop( CAM2);
+
+  if(cam1_stat != REPLY_STOPPED || cam2_stat != REPLY_STOPPED){
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  }
+  /* USER CODE END genericCallback01 */
 }
 
 /* Private application code --------------------------------------------------*/

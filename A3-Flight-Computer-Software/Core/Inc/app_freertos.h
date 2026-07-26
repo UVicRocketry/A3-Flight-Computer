@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sensors.h"
+#include "camera_driver.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -58,7 +59,9 @@ extern "C" {
 extern osThreadId_t fileManagementTaskHandle;
 extern osThreadId_t telemetryHandlerTaskHandle;
 extern osThreadId_t i2cSensorReadTaskHandle;
+extern osTimerId_t genericTimerHandle;
 extern osMessageQueueId_t sensorDataHandle;
+extern osMessageQueueId_t logQueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -66,6 +69,7 @@ extern osMessageQueueId_t sensorDataHandle;
 /* USER CODE END FunctionPrototypes */
 void telemetryHandler(void *argument);
 void i2cSensorReadTask(void *argument);
+void genericCallback01(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

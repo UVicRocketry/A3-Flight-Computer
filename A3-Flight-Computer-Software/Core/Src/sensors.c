@@ -161,3 +161,14 @@ HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data) {
 
     return HAL_OK;
 }
+
+HAL_StatusTypeDef BMP581_get_temperature_pressure(float_t *pTemperature, float_t *pPressure){
+    uint8_t data[6];
+
+    BMP581_read_mult_byte(BMP581_TEMP_DATA_0, data, 6);
+
+    *pTemperature = (float_t)(1.52587891e-5 * (int32_t)( data[2] << 16 | data[1] << 8 | data[0]));
+    *pPressure = (float_t)(1.525625e-2 * (int32_t)( data[5] << 16 | data[4] << 8 | data[3]));
+    
+    return HAL_OK;
+}

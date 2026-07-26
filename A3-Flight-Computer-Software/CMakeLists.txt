@@ -57,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/file_system_handler.c
     Core/Src/sensors.c
     Core/Src/ftoa.c
+    Core/Src/camera_driver.c
 )
 
 # Add include paths

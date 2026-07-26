@@ -145,8 +145,6 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart1, NULL, 1);
-  HAL_UART_Receive_IT(&huart2, NULL, 1);
-  HAL_UART_Receive_IT(&huart4, NULL, 1);
   HAL_UART_Receive_IT(&huart5, NULL, 1);
 
   /* USER CODE END 2 */
@@ -909,13 +907,17 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
   if(huart->Instance = TELEM_UART) {
-    HAL_UART_Receive_IT(huart, NULL, 1);
+    
+    HAL_UART_Receive_IT(&huart1, NULL, 1);
   } else if (huart->Instance = CAM1_UART) {
 
+    HAL_UART_Receive_IT(&huart4, NULL, 1);
   } else if (huart->Instance = CAM2_UART) {
-    
+
+    HAL_UART_Receive_IT(&huart5, NULL, 1);
   } else if (huart->Instance = DEBUG_UART) {
-    
+
+    HAL_UART_Receive_IT(&huart2, NULL, 1); 
   }
 }
 /* USER CODE END 4 */

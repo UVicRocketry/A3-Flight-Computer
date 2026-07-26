@@ -170,6 +170,5 @@ HAL_StatusTypeDef BMP581_Init(void);
 uint8_t BMP581_read_single_byte(uint8_t reg);
 HAL_StatusTypeDef BMP5810_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
 HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data);
-HAL_StatusTypeDef BMP581_get_temperature(float_t *pTemperature);
-HAL_StatusTypeDef BMP581_get_pressure(float_t *pPressure);
+HAL_StatusTypeDef BMP581_get_temperature_pressure(float_t *pTemperature, float_t *pPressure);
 
