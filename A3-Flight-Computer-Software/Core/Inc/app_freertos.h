@@ -21,6 +21,7 @@
 #ifndef __APP_FREERTOS_H
 #define __APP_FREERTOS_H
 
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +40,27 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+typedef union {
+  struct {
+    uint16_t can_nodes    : 12;
+    uint16_t cam_1        : 1;
+    uint16_t cam_2        : 1;
+    uint16_t flight_comp  : 1;
+    uint16_t telem        : 1;
+  };
+  uint16_t status;
+} sys_status_t;
+
+typedef union {
+  struct {
+    uint8_t barometer    : 1;
+    uint8_t lg_accel     : 1;
+    uint8_t hg_accel     : 1;
+    uint8_t file_sys     : 1;
+  };
+  uint8_t status;
+} fc_status_t;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -48,8 +70,16 @@ extern "C" {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ADXL375_EVENT 0x00000001
-#define BMP581_EVENT  0x00000010
+#define ADXL375_EVENT      0b00000001
+#define BMP581_EVENT       0b00000010
+
+#define TELEM_ARM_EVENT    0b000000001
+#define TELEM_DISARM_EVENT 0b000000010
+#define TELEM_STAT_EVENT   0b000000100
+
+#define CAN_NODE_WAKE_ID    0x001
+#define CAN_NODE_SLEEP_ID   0x010
+
 /* USER CODE END PD */
 
 /* Exported macro -------------------------------------------------------------*/
@@ -59,7 +89,6 @@ extern "C" {
 extern osThreadId_t fileManagementTaskHandle;
 extern osThreadId_t telemetryHandlerTaskHandle;
 extern osThreadId_t i2cSensorReadTaskHandle;
-extern osTimerId_t genericTimerHandle;
 extern osMessageQueueId_t sensorDataHandle;
 extern osMessageQueueId_t logQueueHandle;
 
@@ -67,12 +96,16 @@ extern osMessageQueueId_t logQueueHandle;
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
+
+extern void fileManagementTask(void *argument);
 void telemetryHandler(void *argument);
 void i2cSensorReadTask(void *argument);
-void genericCallback01(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
+/* Hook prototypes */
+void configureTimerForRunTimeStats(void);
+unsigned long getRunTimeCounterValue(void);
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 

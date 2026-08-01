@@ -19,8 +19,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
+#include "camera_driver.h"
 #include "cmsis_os2.h"
-#include "stm32h5xx_hal_gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +48,9 @@
 extern RTC_HandleTypeDef hrtc;
 extern FDCAN_HandleTypeDef hfdcan2;
 
+sys_status_t stat_msg = {0};
+fc_status_t fc_stat = {0};
+
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
 osThreadId_t fileManagementTaskHandle;
@@ -60,20 +63,15 @@ const osThreadAttr_t fileManagementTask_attributes = {
 osThreadId_t telemetryHandlerTaskHandle;
 const osThreadAttr_t telemetryHandlerTask_attributes = {
   .name = "telemetryHandlerTask",
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
 /* Definitions for i2cSensorReadTask */
 osThreadId_t i2cSensorReadTaskHandle;
 const osThreadAttr_t i2cSensorReadTask_attributes = {
   .name = "i2cSensorReadTask",
-  .priority = (osPriority_t) osPriorityLow,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
-};
-/* Definitions for genericTimer */
-osTimerId_t genericTimerHandle;
-const osTimerAttr_t genericTimer_attributes = {
-  .name = "genericTimer"
 };
 /* Definitions for sensorData */
 osMessageQueueId_t sensorDataHandle;
@@ -90,6 +88,19 @@ const osMessageQueueAttr_t logQueue_attributes = {
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
+
+/* USER CODE BEGIN 1 */
+/* Functions needed when configGENERATE_RUN_TIME_STATS is on */
+__weak void configureTimerForRunTimeStats(void)
+{
+
+}
+
+__weak unsigned long getRunTimeCounterValue(void)
+{
+return 0;
+}
+/* USER CODE END 1 */
 
 /**
   * @brief  FreeRTOS initialization
@@ -108,8 +119,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
-  /* creation of genericTimer */
-  genericTimerHandle = osTimerNew(genericCallback01, osTimerOnce, NULL, &genericTimer_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -140,7 +149,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-
 /* USER CODE BEGIN Header_telemetryHandler */
 /**
 * @brief Function implementing the telemetryHandlerTask thread.
@@ -153,40 +161,59 @@ void telemetryHandler(void *argument)
   /* USER CODE BEGIN telemetryHandlerTask */
   cam_status_t cam1_stat;
   cam_status_t cam2_stat;
-
-  uint8_t stop_sent = 0;
+  uint32_t flags;
+  FDCAN_TxHeaderTypeDef txHeader;
   
   /* Infinite loop */
-  cam1_stat = camera_start(CAM1);
+  // cam1_stat = camera_start(CAM1);
 
-  if(cam1_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-  }
+  // if(cam1_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
+  //   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  // }
 
-  cam2_stat = camera_start(CAM2);
+  // cam2_stat = camera_start(CAM2);
   
-  if(cam2_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-  }
+  // if(cam2_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
+  //   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  // }
 
   for(;;)
   {
-    osDelay(100);
-    cam1_stat = camera_status(CAM1);
-    if(cam1_stat == REPLY_INVALID_CMD || cam1_stat == REPLY_ERROR){
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+    flags = osThreadFlagsWait(TELEM_ARM_EVENT | TELEM_DISARM_EVENT | TELEM_DISARM_EVENT, osFlagsWaitAny, osWaitForever);
+
+    if(flags & TELEM_ARM_EVENT) {
+      cam1_stat = camera_start(CAM1);
+      if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
+        //log error
+      }
+
+      cam2_stat = camera_start(CAM2);
+      if(cam2_stat == REPLY_ERROR || cam2_stat == REPLY_INVALID_CMD){
+        //log error
+      }
+
+      txHeader.Identifier = CAN_NODE_WAKE_ID;
+      HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
     }
 
-    cam2_stat = camera_status(CAM2);
-    if(cam1_stat == REPLY_INVALID_CMD || cam1_stat == REPLY_ERROR){
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+    if(flags & TELEM_DISARM_EVENT) {
+      cam1_stat = camera_stop(CAM1);
+      if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
+        //log error
+      }
+
+      cam2_stat = camera_stop(CAM2);
+      if(cam2_stat == REPLY_ERROR || cam2_stat == REPLY_INVALID_CMD){
+        //log error
+      }
+
+      txHeader.Identifier = CAN_NODE_SLEEP_ID;
+      HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
     }
 
-    if(cam1_stat == REPLY_RECORDING || cam2_stat == REPLY_RECORDING && stop_sent != 1){
-      osTimerStart(genericTimerHandle, 15 * 1000);
-      stop_sent = 1;
-    }
+    if(flags & TELEM_STAT_EVENT){
 
+    }
   }
   /* USER CODE END telemetryHandlerTask */
 }
@@ -207,15 +234,17 @@ void i2cSensorReadTask(void *argument)
   uint32_t flags;
   SensorPayload_t payload;
   AccelData_t acceleration;
-  float_t temperature;
-  float_t pressure;
-
+  BaroData_t baro_data;
+  
+  taskENTER_CRITICAL();
   ADXL375_Init();
   BMP581_Init();
+  taskEXIT_CRITICAL();
+
   /* Infinite loop */
   for(;;)
   {
-    flags = osThreadFlagsWait(0x0000000, osFlagsWaitAny, 0);
+    flags = osThreadFlagsWait(BMP581_EVENT | ADXL375_EVENT, osFlagsWaitAny, osWaitForever);
 
     if(flags & ADXL375_EVENT){
       HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
@@ -226,33 +255,36 @@ void i2cSensorReadTask(void *argument)
         payload.time = time;
         payload.data.accel = acceleration;
 
+        taskENTER_CRITICAL();
+        fc_stat.hg_accel = 1;
+        taskEXIT_CRITICAL();
+
         osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
       } else {
         //Log error
       }
     }
     if (flags & BMP581_EVENT) {
-      uint8_t data = BMP581_read_single_byte(BMP581_INT_STATUS);
+      HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
 
-      BMP581_get_temperature_pressure(&temperature, &pressure);
+      uint8_t data = BMP581_read_single_byte(BMP581_INT_STATUS);
+      if(BMP581_get_temperature_pressure(&baro_data) == HAL_OK){
+        payload.sensor_type = SENSOR_BAROMETER;
+        payload.time = time;
+        payload.data.baro_data = baro_data;
+
+        taskENTER_CRITICAL();
+        fc_stat.barometer = 1;
+        taskEXIT_CRITICAL();
+
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+      } else {
+        //Log error
+      }
     }
   }
   /* USER CODE END i2cSensorReadTask */
-}
-
-/* genericCallback01 function */
-void genericCallback01(void *argument)
-{
-  cam_status_t cam1_stat;
-  cam_status_t cam2_stat;
-  /* USER CODE BEGIN genericCallback01 */
-  cam1_stat = camera_stop( CAM1);
-  cam2_stat = camera_stop( CAM2);
-
-  if(cam1_stat != REPLY_STOPPED || cam2_stat != REPLY_STOPPED){
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-  }
-  /* USER CODE END genericCallback01 */
 }
 
 /* Private application code --------------------------------------------------*/

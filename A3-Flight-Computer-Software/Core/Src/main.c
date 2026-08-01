@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,6 +76,13 @@ PCD_HandleTypeDef hpcd_USB_DRD_FS;
 
 /* USER CODE BEGIN PV */
 
+extern osMessageQueueId_t sensorDataHandle;
+extern osThreadId_t i2cSensorReadTaskHandle;
+extern osThreadId_t telemetryHandlerTaskHandle;
+extern sys_status_t stat_msg;
+
+volatile uint8_t telem_buffer;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,8 +106,6 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-extern osMessageQueueId_t sensorDataHandle;
 
 /* USER CODE END 0 */
 
@@ -144,9 +150,7 @@ int main(void)
   MX_USB_PCD_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart1, NULL, 1);
-  HAL_UART_Receive_IT(&huart5, NULL, 1);
-
+  HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -881,6 +885,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       payload.data.strain.left_gauge_uV = data[1] << 8 | data[0];
       payload.data.strain.center_gauge_uV = data[3] << 8 | data[2];
       payload.data.strain.right_gauge_uV = data[5] << 8 | data[4];
+      stat_msg.can_nodes |= 1 << ((payload.node_id) & 0x00F);
       break;
     case(CAN_TEMP_FILTER_INDEX):
       payload.sensor_type = SENSOR_RTD;
@@ -907,17 +912,19 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
   if(huart->Instance = TELEM_UART) {
-    
+    switch (telem_buffer) {
+      case 'A':
+      case 'a':
+        osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_ARM_EVENT);
+        break;
+      case 'D':
+      case 'd':
+        osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_DISARM_EVENT);  
+        break;
+      default:
+        break;
+    }
     HAL_UART_Receive_IT(&huart1, NULL, 1);
-  } else if (huart->Instance = CAM1_UART) {
-
-    HAL_UART_Receive_IT(&huart4, NULL, 1);
-  } else if (huart->Instance = CAM2_UART) {
-
-    HAL_UART_Receive_IT(&huart5, NULL, 1);
-  } else if (huart->Instance = DEBUG_UART) {
-
-    HAL_UART_Receive_IT(&huart2, NULL, 1); 
   }
 }
 /* USER CODE END 4 */

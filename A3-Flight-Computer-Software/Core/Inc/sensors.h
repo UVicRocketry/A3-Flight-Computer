@@ -8,6 +8,7 @@ typedef enum {
     SENSOR_TEMPERATURE,
     SENSOR_RTD,
     SENSOR_PRESSURE,
+    SENSOR_BAROMETER,
     SENSOR_ACCEL_ADXL375,
     SENSOR_GYRO
 } SensorType_t;
@@ -37,6 +38,11 @@ typedef struct {
     float roll_dps;
 } GyroData_t;
 
+typedef struct {
+    float_t pressure;
+    float_t temperature;
+} BaroData_t;
+
 
 /*----------- Sensor Payload Union -----------*/
 
@@ -48,6 +54,7 @@ typedef union {
     AccelData_t accel;
     GyroData_t gyro;
     int16_t temperature_mv;
+    BaroData_t baro_data;
 } SensorData_t;
 
 
@@ -158,7 +165,7 @@ typedef struct {
 #define BMP581_INT_ENABLE       0x08
 
 #define BMP581_DEEPSTDBY_DIS    0X80
-
+#define BMP581_ODR_MASK         0x7C
 
 HAL_StatusTypeDef ADXL375_Init(void);
 uint8_t ADXL375_read_single_byte(uint8_t reg);
@@ -170,5 +177,6 @@ HAL_StatusTypeDef BMP581_Init(void);
 uint8_t BMP581_read_single_byte(uint8_t reg);
 HAL_StatusTypeDef BMP5810_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
 HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data);
-HAL_StatusTypeDef BMP581_get_temperature_pressure(float_t *pTemperature, float_t *pPressure);
+HAL_StatusTypeDef BMP581_get_temperature_pressure(BaroData_t *pbarodata);
+
 
