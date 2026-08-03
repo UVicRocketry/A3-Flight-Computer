@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+#include "stm32h5xx_hal_tim.h"
 
 /* USER CODE END Includes */
 
@@ -66,6 +67,7 @@ RTC_HandleTypeDef hrtc;
 SD_HandleTypeDef hsd1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart5;
@@ -79,7 +81,8 @@ PCD_HandleTypeDef hpcd_USB_DRD_FS;
 extern osMessageQueueId_t sensorDataHandle;
 extern osThreadId_t i2cSensorReadTaskHandle;
 extern osThreadId_t telemetryHandlerTaskHandle;
-extern sys_status_t stat_msg;
+
+extern uint16_t can_status;
 
 volatile uint8_t telem_buffer;
 
@@ -100,6 +103,7 @@ static void MX_UART5_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USB_PCD_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -149,7 +153,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_PCD_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start_IT(&htim3);
   HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   /* USER CODE END 2 */
 
@@ -573,6 +580,51 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 19999;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 24999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -885,7 +937,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       payload.data.strain.left_gauge_uV = data[1] << 8 | data[0];
       payload.data.strain.center_gauge_uV = data[3] << 8 | data[2];
       payload.data.strain.right_gauge_uV = data[5] << 8 | data[4];
-      stat_msg.can_nodes |= 1 << ((payload.node_id) & 0x00F);
+      can_status |= 1 << ((payload.node_id) & 0x00F);
       break;
     case(CAN_TEMP_FILTER_INDEX):
       payload.sensor_type = SENSOR_RTD;
@@ -927,6 +979,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
     HAL_UART_Receive_IT(&huart1, NULL, 1);
   }
 }
+
 /* USER CODE END 4 */
 
 /**
@@ -948,6 +1001,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
 
+  if(htim->Instance == TIM3) {
+    osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_STAT_EVENT);
+  }
   /* USER CODE END Callback 1 */
 }
 

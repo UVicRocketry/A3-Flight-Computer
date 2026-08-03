@@ -19,8 +19,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
-#include "camera_driver.h"
-#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -47,9 +45,12 @@
 
 extern RTC_HandleTypeDef hrtc;
 extern FDCAN_HandleTypeDef hfdcan2;
+extern UART_HandleTypeDef huart1;
 
-sys_status_t stat_msg = {0};
 fc_status_t fc_stat = {0};
+
+volatile uint16_t can_status = 0;
+
 
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
@@ -126,7 +127,7 @@ void MX_FREERTOS_Init(void) {
   /* creation of sensorData */
   sensorDataHandle = osMessageQueueNew (16, sizeof(SensorPayload_t), &sensorData_attributes);
   /* creation of logQueue */
-  //logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
+  // logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -163,6 +164,7 @@ void telemetryHandler(void *argument)
   cam_status_t cam2_stat;
   uint32_t flags;
   FDCAN_TxHeaderTypeDef txHeader;
+  sys_status_t stat_msg = {0};
   
   /* Infinite loop */
   // cam1_stat = camera_start(CAM1);
@@ -179,7 +181,7 @@ void telemetryHandler(void *argument)
 
   for(;;)
   {
-    flags = osThreadFlagsWait(TELEM_ARM_EVENT | TELEM_DISARM_EVENT | TELEM_DISARM_EVENT, osFlagsWaitAny, osWaitForever);
+    flags = osThreadFlagsWait(TELEM_ARM_EVENT | TELEM_DISARM_EVENT | TELEM_STAT_EVENT, osFlagsWaitAny, osWaitForever);
 
     if(flags & TELEM_ARM_EVENT) {
       cam1_stat = camera_start(CAM1);
@@ -213,6 +215,21 @@ void telemetryHandler(void *argument)
 
     if(flags & TELEM_STAT_EVENT){
 
+      cam1_stat = camera_status(CAM1);
+      cam2_stat = camera_status(CAM2);
+
+      taskENTER_CRITICAL();
+      stat_msg.can_nodes = can_status;
+      can_status = 0;
+      taskENTER_CRITICAL();
+
+      stat_msg.cam_1 = (cam1_stat == REPLY_RECORDING) ? 1 : 0;
+      stat_msg.cam_2 = (cam2_stat == REPLY_RECORDING) ? 1 : 0;
+      stat_msg.flight_comp = (fc_stat.status & FC_OK) != 0 ? 1 : 0;
+
+      if(HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100) != HAL_OK){
+        //log error
+      }
     }
   }
   /* USER CODE END telemetryHandlerTask */
@@ -255,9 +272,7 @@ void i2cSensorReadTask(void *argument)
         payload.time = time;
         payload.data.accel = acceleration;
 
-        taskENTER_CRITICAL();
         fc_stat.hg_accel = 1;
-        taskEXIT_CRITICAL();
 
         osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
       } else {
@@ -274,9 +289,7 @@ void i2cSensorReadTask(void *argument)
         payload.time = time;
         payload.data.baro_data = baro_data;
 
-        taskENTER_CRITICAL();
         fc_stat.barometer = 1;
-        taskEXIT_CRITICAL();
 
         osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
       } else {

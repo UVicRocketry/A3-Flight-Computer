@@ -21,7 +21,6 @@
 #ifndef __APP_FREERTOS_H
 #define __APP_FREERTOS_H
 
-#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -79,6 +78,8 @@ typedef union {
 
 #define CAN_NODE_WAKE_ID    0x001
 #define CAN_NODE_SLEEP_ID   0x010
+
+#define FC_OK 0XF
 
 /* USER CODE END PD */
 
