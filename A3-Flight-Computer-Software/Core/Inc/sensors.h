@@ -10,6 +10,7 @@ typedef enum {
     SENSOR_PRESSURE,
     SENSOR_BAROMETER,
     SENSOR_ACCEL_ADXL375,
+    SENSOR_ACCEL_LSM6DS032,
     SENSOR_GYRO
 } SensorType_t;
 
@@ -113,6 +114,7 @@ typedef struct {
 
 #define ADXL375_LOW_POWER       0b00010000
 
+//Defines for BMP581 Barometer
 #define BMP581_INT_PIN          GPIO_PIN_0
 
 #define BMP581_WRITE_ADDR       0x8C
@@ -167,6 +169,68 @@ typedef struct {
 #define BMP581_DEEPSTDBY_DIS    0X80
 #define BMP581_ODR_MASK         0x7C
 
+//Defines for LSM6DS032
+#define LSM6DSO32_WRITE_ADDR       0xD4
+#define LSM6DSO32_READ_ADDR        0xD5
+
+#define LSM6DSO32_INT1_PIN         GPIO_PIN_6
+#define LSM6DSO32_INT2_PIN         GPIO_PIN_7
+
+#define LSM6DSO32_DEV_ID           0x6C
+#define LSM6DSO32_DEV_ID_REG       0x0F
+#define LSM6DSO32_PIN_CTRL         0x02
+#define LSM6DSO32_FIFO_CTRL1       0x07
+#define LSM6DSO32_FIFO_CTRL2       0x08
+#define LSM6DSO32_FIFO_CTRL3       0x09
+#define LSM6DSO32_FIFO_CTRL4       0x0A
+#define LSM6DSO32_CNTR_BDR_REG1    0x0B
+#define LSM6DSO32_CNTR_BDR_REG2    0x0C
+#define LSM6DSO32_INT1_CTRL        0x0D
+#define LSM6DSO32_INT2_CTRL        0x0E
+#define LSM6DSO32_CTRL1_XL         0x10
+#define LSM6DSO32_CTRL2_G          0x11
+#define LSM6DSO32_CTRL3_C          0x12
+#define LSM6DSO32_CTRL4_C          0x13
+#define LSM6DSO32_CTRL5_C          0x14
+#define LSM6DSO32_CTRL6_C          0x15
+#define LSM6DSO32_CTRL7_G          0x16
+#define LSM6DSO32_CTRL8_XL         0x17
+#define LSM6DSO32_CTRL9_XL         0x18
+#define LSM6DSO32_CTRL10_G         0x19
+#define LSM6DSO32_ALL_INT_SRC      0x1A
+#define LSM6DSO32_WAKE_UP_SRC      0x1B
+#define LSM6DSO32_TAP_SRC          0x1C
+#define LSM6DSO32_D6D_SRC          0x1D
+#define LSM6DSO32_STATUS_REG       0x1E
+#define LSM6DSO32_OUT_TEMP_L       0x20
+#define LSM6DSO32_OUT_TEMP_H       0x21
+#define LSM6DSO32_OUTX_L_G         0x22
+#define LSM6DSO32_OUTX_H_G         0x23
+#define LSM6DSO32_OUTY_L_G         0x24
+#define LSM6DSO32_OUTY_H_G         0x25
+#define LSM6DSO32_OUTZ_L_G         0x26
+#define LSM6DSO32_OUTZ_H_G         0x27
+#define LSM6DSO32_OUTX_L_A         0x28
+#define LSM6DSO32_OUTX_H_A         0x29
+#define LSM6DSO32_OUTY_L_A         0x2A
+#define LSM6DSO32_OUTY_H_A         0x2B
+#define LSM6DSO32_OUTZ_L_A         0x2C
+#define LSM6DSO32_OUTZ_H_A         0x2D
+#define LSM6DSO32_TAP_CFG_2        0x58
+
+#define LSM6DSO32_INT_DRDY_A       0x01
+#define LSM6DSO32_INT_DRDY_G       0x02
+
+#define LSM6DSO32_ODR_416HZ        0x60
+#define LSM6DSO32_ODR_833HZ        0x70
+#define LSM6DSO32_PWR_DWN          0x00
+#define LSM6DS032_ODR_MASK         0x0F
+
+#define LSM6DS032_FULL_SCALE       0x0C
+
+#define LSM6DSO32_G_ENABlE         0x40
+#define LSM6DSO32_INT_EN           0x80
+
 HAL_StatusTypeDef ADXL375_Init(void);
 uint8_t ADXL375_read_single_byte(uint8_t reg);
 HAL_StatusTypeDef ADXL375_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
@@ -175,8 +239,15 @@ HAL_StatusTypeDef ADXL375_get_acceleration(AccelData_t *pAccelData);
 
 HAL_StatusTypeDef BMP581_Init(void);
 uint8_t BMP581_read_single_byte(uint8_t reg);
-HAL_StatusTypeDef BMP5810_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
+HAL_StatusTypeDef BMP581_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
 HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data);
 HAL_StatusTypeDef BMP581_get_temperature_pressure(BaroData_t *pbarodata);
+
+HAL_StatusTypeDef LSM6DSO32_Init(void);
+uint8_t LSM6DSO32_read_single_byte(uint8_t reg);
+HAL_StatusTypeDef LSM6DSO32_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
+HAL_StatusTypeDef LSM6DSO32_write_single_byte(uint8_t reg, uint8_t data);
+HAL_StatusTypeDef LSM6DSO32_get_acceleration(AccelData_t *pAccelData);
+HAL_StatusTypeDef LSM6DSO32_get_gyro(GyroData_t *pGyroData);
 
 

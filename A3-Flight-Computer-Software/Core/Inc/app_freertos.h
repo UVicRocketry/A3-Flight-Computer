@@ -69,8 +69,11 @@ typedef union {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ADXL375_EVENT      0b00000001
-#define BMP581_EVENT       0b00000010
+#define ADXL375_EVENT           0b00000001
+#define BMP581_EVENT            0b00000010
+#define LSM6DSO32_GYRO_EVENT    0b00000100
+#define LSM6DSO32_ACCEL_EVENT   0b00001000
+
 
 #define TELEM_ARM_EVENT    0b000000001
 #define TELEM_DISARM_EVENT 0b000000010

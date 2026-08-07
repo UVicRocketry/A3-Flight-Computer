@@ -57,14 +57,14 @@ volatile uint16_t can_status = 0;
 osThreadId_t fileManagementTaskHandle;
 const osThreadAttr_t fileManagementTask_attributes = {
   .name = "fileManagementTask",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityNormal3,
   .stack_size = 512 * 4
 };
 /* Definitions for telemetryHandlerTask */
 osThreadId_t telemetryHandlerTaskHandle;
 const osThreadAttr_t telemetryHandlerTask_attributes = {
   .name = "telemetryHandlerTask",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityBelowNormal5,
   .stack_size = 128 * 4
 };
 /* Definitions for i2cSensorReadTask */
@@ -127,7 +127,7 @@ void MX_FREERTOS_Init(void) {
   /* creation of sensorData */
   sensorDataHandle = osMessageQueueNew (16, sizeof(SensorPayload_t), &sensorData_attributes);
   /* creation of logQueue */
-  // logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
+  //logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -162,28 +162,17 @@ void telemetryHandler(void *argument)
   /* USER CODE BEGIN telemetryHandlerTask */
   cam_status_t cam1_stat;
   cam_status_t cam2_stat;
-  uint32_t flags;
+  int32_t flags;
   FDCAN_TxHeaderTypeDef txHeader;
   sys_status_t stat_msg = {0};
   
-  /* Infinite loop */
-  // cam1_stat = camera_start(CAM1);
-
-  // if(cam1_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
-  //   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-  // }
-
-  // cam2_stat = camera_start(CAM2);
-  
-  // if(cam2_stat != REPLY_STARTING || cam1_stat != REPLY_RECORDING){
-  //   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
-  // }
-
+ 
   for(;;)
   {
     flags = osThreadFlagsWait(TELEM_ARM_EVENT | TELEM_DISARM_EVENT | TELEM_STAT_EVENT, osFlagsWaitAny, osWaitForever);
-
-    if(flags & TELEM_ARM_EVENT) {
+    if (flags < 0){
+      // osThreadFlagsClear()
+    } else if(flags & TELEM_ARM_EVENT) {
       cam1_stat = camera_start(CAM1);
       if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
         //log error
@@ -196,9 +185,7 @@ void telemetryHandler(void *argument)
 
       txHeader.Identifier = CAN_NODE_WAKE_ID;
       HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
-    }
-
-    if(flags & TELEM_DISARM_EVENT) {
+    } else if(flags & TELEM_DISARM_EVENT) {
       cam1_stat = camera_stop(CAM1);
       if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
         //log error
@@ -211,9 +198,7 @@ void telemetryHandler(void *argument)
 
       txHeader.Identifier = CAN_NODE_SLEEP_ID;
       HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
-    }
-
-    if(flags & TELEM_STAT_EVENT){
+    } else if(flags & TELEM_STAT_EVENT) {
 
       cam1_stat = camera_status(CAM1);
       cam2_stat = camera_status(CAM2);
@@ -221,11 +206,13 @@ void telemetryHandler(void *argument)
       taskENTER_CRITICAL();
       stat_msg.can_nodes = can_status;
       can_status = 0;
-      taskENTER_CRITICAL();
+
+      stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
+      fc_stat.status = 0;
+      taskEXIT_CRITICAL();
 
       stat_msg.cam_1 = (cam1_stat == REPLY_RECORDING) ? 1 : 0;
       stat_msg.cam_2 = (cam2_stat == REPLY_RECORDING) ? 1 : 0;
-      stat_msg.flight_comp = (fc_stat.status & FC_OK) != 0 ? 1 : 0;
 
       if(HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100) != HAL_OK){
         //log error
@@ -251,12 +238,13 @@ void i2cSensorReadTask(void *argument)
   uint32_t flags;
   SensorPayload_t payload;
   AccelData_t acceleration;
+  GyroData_t gyro_data;
   BaroData_t baro_data;
   
-  taskENTER_CRITICAL();
+
   ADXL375_Init();
   BMP581_Init();
-  taskEXIT_CRITICAL();
+  LSM6DSO32_Init();
 
   /* Infinite loop */
   for(;;)
@@ -290,6 +278,38 @@ void i2cSensorReadTask(void *argument)
         payload.data.baro_data = baro_data;
 
         fc_stat.barometer = 1;
+
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+      } else {
+        //Log error
+      }
+    }
+    if(flags & LSM6DSO32_ACCEL_EVENT){
+      HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+
+      if(LSM6DSO32_get_acceleration(&acceleration) == HAL_OK){
+        payload.sensor_type = SENSOR_ACCEL_LSM6DS032;
+        payload.time = time;
+        payload.data.accel = acceleration;
+
+        fc_stat.lg_accel = 1;
+
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+      } else {
+        //Log error
+      }
+    }
+    if (flags & LSM6DSO32_GYRO_EVENT) {
+      HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+      HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+
+      if(LSM6DSO32_get_gyro(&gyro_data) == HAL_OK){
+        payload.sensor_type = SENSOR_GYRO;
+        payload.time = time;
+        payload.data.gyro = gyro_data;
+
+        fc_stat.lg_accel = 1;
 
         osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
       } else {

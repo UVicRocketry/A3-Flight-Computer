@@ -23,7 +23,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
-#include "stm32h5xx_hal_tim.h"
 
 /* USER CODE END Includes */
 
@@ -958,6 +957,12 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
       break;
     case BMP581_INT_PIN:
       osThreadFlagsSet(i2cSensorReadTaskHandle, BMP581_EVENT);
+      break;
+    case LSM6DSO32_INT1_PIN:
+      osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_ACCEL_EVENT);
+      break;    
+    case LSM6DSO32_INT2_PIN:
+      osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_GYRO_EVENT);
       break;
   }
 }
