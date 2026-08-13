@@ -1,5 +1,6 @@
 #include "file_system_handler.h"
 #include "app_freertos.h"
+#include "cmsis_os2.h"
 
 int8_t path;
 FATFS file_sys;
@@ -91,8 +92,8 @@ void fileManagementTask(void *argument)
       }
 
       stat = f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-      f_write(&file, data, size, &bytes_written);
-      f_close(&file);
+      stat = f_write(&file, data, size, &bytes_written);
+      stat = f_close(&file);
     }
   }
   /* USER CODE END fileManagementTask */

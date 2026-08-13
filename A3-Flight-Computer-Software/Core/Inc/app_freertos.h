@@ -41,10 +41,10 @@ extern "C" {
 
 typedef union {
   struct {
-    uint16_t can_nodes    : 12;
-    uint16_t cam_1        : 1;
-    uint16_t cam_2        : 1;
-    uint16_t flight_comp  : 1;
+    uint16_t can_nodes    : 8;
+    uint16_t cam_1        : 3;
+    uint16_t cam_2        : 3;
+    // uint16_t flight_comp  : 1;
     uint16_t telem        : 1;
   };
   uint16_t status;

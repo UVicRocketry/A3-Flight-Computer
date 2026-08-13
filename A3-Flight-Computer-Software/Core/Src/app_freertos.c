@@ -58,21 +58,21 @@ osThreadId_t fileManagementTaskHandle;
 const osThreadAttr_t fileManagementTask_attributes = {
   .name = "fileManagementTask",
   .priority = (osPriority_t) osPriorityNormal3,
-  .stack_size = 512 * 4
+  .stack_size = 1024 * 4
 };
 /* Definitions for telemetryHandlerTask */
 osThreadId_t telemetryHandlerTaskHandle;
 const osThreadAttr_t telemetryHandlerTask_attributes = {
   .name = "telemetryHandlerTask",
-  .priority = (osPriority_t) osPriorityBelowNormal5,
-  .stack_size = 128 * 4
+  .priority = (osPriority_t) osPriorityNormal5,
+  .stack_size = 1024 * 4
 };
 /* Definitions for i2cSensorReadTask */
 osThreadId_t i2cSensorReadTaskHandle;
 const osThreadAttr_t i2cSensorReadTask_attributes = {
   .name = "i2cSensorReadTask",
   .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
+  .stack_size = 1024 * 4
 };
 /* Definitions for sensorData */
 osMessageQueueId_t sensorDataHandle;
@@ -125,7 +125,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (16, sizeof(SensorPayload_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (24, sizeof(SensorPayload_t), &sensorData_attributes);
   /* creation of logQueue */
   //logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
 
@@ -163,8 +163,9 @@ void telemetryHandler(void *argument)
   cam_status_t cam1_stat;
   cam_status_t cam2_stat;
   int32_t flags;
-  FDCAN_TxHeaderTypeDef txHeader;
+  FDCAN_TxHeaderTypeDef txHeader = {0};
   sys_status_t stat_msg = {0};
+  HAL_StatusTypeDef uart_flags;
   
  
   for(;;)
@@ -207,15 +208,17 @@ void telemetryHandler(void *argument)
       stat_msg.can_nodes = can_status;
       can_status = 0;
 
-      stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
+      //stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
       fc_stat.status = 0;
       taskEXIT_CRITICAL();
 
-      stat_msg.cam_1 = (cam1_stat == REPLY_RECORDING) ? 1 : 0;
-      stat_msg.cam_2 = (cam2_stat == REPLY_RECORDING) ? 1 : 0;
+      stat_msg.cam_1 = cam1_stat;
+      stat_msg.cam_2 = cam2_stat;
 
-      if(HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100) != HAL_OK){
-        //log error
+      uart_flags = HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100);
+
+      if(uart_flags){
+        stat_msg.status = 0x0BAD;
       }
     }
   }

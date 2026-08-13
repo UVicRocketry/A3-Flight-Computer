@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+#include "stm32h5xx_hal_fdcan.h"
 
 /* USER CODE END Includes */
 
@@ -157,6 +158,9 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
   HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
+  FDCAN_TxHeaderTypeDef txHeader = {0};
+  txHeader.Identifier = CAN_NODE_SLEEP_ID;
+  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -597,7 +601,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 19999;
+  htim3.Init.Prescaler = 4999;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 24999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -735,7 +739,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 9600;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -981,7 +985,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
       default:
         break;
     }
-    HAL_UART_Receive_IT(&huart1, NULL, 1);
+    HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   }
 }
 
