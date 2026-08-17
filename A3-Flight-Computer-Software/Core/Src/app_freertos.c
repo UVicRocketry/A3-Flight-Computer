@@ -71,18 +71,13 @@ const osThreadAttr_t telemetryHandlerTask_attributes = {
 osThreadId_t i2cSensorReadTaskHandle;
 const osThreadAttr_t i2cSensorReadTask_attributes = {
   .name = "i2cSensorReadTask",
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityNormal4,
   .stack_size = 1024 * 4
 };
 /* Definitions for sensorData */
 osMessageQueueId_t sensorDataHandle;
 const osMessageQueueAttr_t sensorData_attributes = {
   .name = "sensorData"
-};
-/* Definitions for logQueue */
-osMessageQueueId_t logQueueHandle;
-const osMessageQueueAttr_t logQueue_attributes = {
-  .name = "logQueue"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,9 +120,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (24, sizeof(SensorPayload_t), &sensorData_attributes);
-  /* creation of logQueue */
-  //logQueueHandle = osMessageQueueNew (16, sizeof(log_t), &logQueue_attributes);
+  sensorDataHandle = osMessageQueueNew (50, sizeof(SensorPayload_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -265,7 +258,7 @@ void i2cSensorReadTask(void *argument)
 
         fc_stat.hg_accel = 1;
 
-        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
       }
@@ -282,7 +275,7 @@ void i2cSensorReadTask(void *argument)
 
         fc_stat.barometer = 1;
 
-        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
       }
@@ -298,7 +291,7 @@ void i2cSensorReadTask(void *argument)
 
         fc_stat.lg_accel = 1;
 
-        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
       }
@@ -314,7 +307,7 @@ void i2cSensorReadTask(void *argument)
 
         fc_stat.lg_accel = 1;
 
-        osMessageQueuePut(sensorDataHandle, &payload, 0, 10);
+        osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
       }

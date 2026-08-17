@@ -12,7 +12,7 @@ int size = 0;
 int bytes_written = 0;
 SensorPayload_t payload;
 float_t seconds;
-uint8_t log_file_path[12];
+uint8_t log_file_path[17];
 uint8_t seconds_buf[20];
 uint8_t float_buf_1[20];
 uint8_t float_buf_2[20];
@@ -64,7 +64,19 @@ void fileManagementTask(void *argument)
           
           break;
         case SENSOR_ACCEL_ADXL375:
-          sprintf(log_file_path, "adxl375.csv");
+          sprintf(log_file_path, "hgaccel.csv");
+          ftoa(payload.data.accel.accel_x_G, float_buf_1, 4);
+          ftoa(payload.data.accel.accel_y_G, float_buf_2, 4);
+          ftoa(payload.data.accel.accel_z_G, float_buf_3, 4);
+          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+                                                payload.time.Minutes,
+                                                seconds_buf,
+                                                float_buf_1,
+                                                float_buf_2,
+                                                float_buf_3);
+          break;
+        case SENSOR_ACCEL_LSM6DS032:
+          sprintf(log_file_path, "lgaccel.csv");
           ftoa(payload.data.accel.accel_x_G, float_buf_1, 4);
           ftoa(payload.data.accel.accel_y_G, float_buf_2, 4);
           ftoa(payload.data.accel.accel_z_G, float_buf_3, 4);
@@ -76,6 +88,16 @@ void fileManagementTask(void *argument)
                                                 float_buf_3);
           break;
         case SENSOR_GYRO:
+          sprintf(log_file_path, "gyro.csv");
+          ftoa(payload.data.gyro.pitch_dps, float_buf_1, 4);
+          ftoa(payload.data.gyro.roll_dps, float_buf_2, 4);
+          ftoa(payload.data.gyro.yaw_dps, float_buf_3, 4);
+          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+                                                payload.time.Minutes,
+                                                seconds_buf,
+                                                float_buf_1,
+                                                float_buf_2,
+                                                float_buf_3);
           break;
         case SENSOR_BAROMETER:
           sprintf(log_file_path, "BMP581.csv");

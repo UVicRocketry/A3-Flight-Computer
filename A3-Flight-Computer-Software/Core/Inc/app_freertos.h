@@ -94,7 +94,6 @@ extern osThreadId_t fileManagementTaskHandle;
 extern osThreadId_t telemetryHandlerTaskHandle;
 extern osThreadId_t i2cSensorReadTaskHandle;
 extern osMessageQueueId_t sensorDataHandle;
-extern osMessageQueueId_t logQueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */

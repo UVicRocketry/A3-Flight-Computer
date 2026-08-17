@@ -23,7 +23,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+#include "stm32h5xx_hal.h"
 #include "stm32h5xx_hal_fdcan.h"
+#include "stm32h5xx_hal_gpio.h"
+#include "stm32h5xx_hal_uart.h"
 
 /* USER CODE END Includes */
 
@@ -106,6 +109,9 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
+static void Tone(uint32_t Frequency, uint32_t Duration);
+static void noTone();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -155,12 +161,9 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
   HAL_TIM_Base_Start_IT(&htim3);
+  HAL_TIM_Base_Start_IT(&htim2);
   HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
-  FDCAN_TxHeaderTypeDef txHeader = {0};
-  txHeader.Identifier = CAN_NODE_SLEEP_ID;
-  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -545,19 +548,24 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 2500;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 20;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -567,18 +575,9 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -982,11 +981,27 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
       case 'd':
         osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_DISARM_EVENT);  
         break;
+      case 'P':
+      case 'p':
+        uint8_t data = 'Y';
+        HAL_UART_Transmit_IT(&huart1, &data, 1);
       default:
         break;
     }
     HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   }
+}
+
+static void Tone(uint32_t Frequency, uint32_t Duration)
+{
+    TIM2->ARR = (1000000UL / Frequency) - 1; // Set The PWM Frequency
+    TIM2->CCR1 = (TIM2->ARR >> 1); // Set Duty Cycle 50%
+    HAL_Delay(Duration); // Wait For The Tone Duration
+}
+ 
+static void noTone()
+{
+    TIM2->CCR1 = 0; // Set Duty Cycle 0%
 }
 
 /* USER CODE END 4 */
@@ -1012,6 +1027,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   if(htim->Instance == TIM3) {
     osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_STAT_EVENT);
+  }
+
+  if(htim->Instance == TIM3) {
+    osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_GYRO_EVENT| LSM6DSO32_ACCEL_EVENT);
   }
   /* USER CODE END Callback 1 */
 }

@@ -1,6 +1,4 @@
 #include "sensors.h"
-#include "stm32h5xx_hal_def.h"
-#include <stdint.h>
 
 extern I2C_HandleTypeDef hi2c3;
 
@@ -19,7 +17,7 @@ HAL_StatusTypeDef ADXL375_Init(void) {
     data |= 0b10000000;
     ADXL375_write_single_byte(ADXL375_FIFO_CTL, 0);
 
-    ADXL375_write_single_byte(ADXL375_BW_RATE, ADXL375_100_BW);
+    ADXL375_write_single_byte(ADXL375_BW_RATE, ADXL375_400_BW);
 
     data = ADXL375_read_single_byte(ADXL375_DATA_FORMAT);
     data |= 0b10000000;
@@ -104,8 +102,9 @@ HAL_StatusTypeDef BMP581_Init(void){
 
     data = BMP581_read_single_byte(BMP581_ODR_CONFIG);
     data &= BMP581_ODR_MASK;
-    data |= (BMP581_ODR_120HZ) << 2;
+    data |= (BMP581_ODR_30HZ) << 2 | 0x01;
     BMP581_write_single_byte(BMP581_ODR_CONFIG, data);
+
 
     data = BMP581_read_single_byte(BMP581_OSR_CONFIG);
     data |= BMP581_PRES_ENABLE | (BMP581_OSR_8X) << 3 | (BMP581_OSR_8X);

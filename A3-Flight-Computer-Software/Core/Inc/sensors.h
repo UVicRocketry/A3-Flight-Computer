@@ -153,6 +153,9 @@ typedef struct {
 #define BMP581_OSR_128X         0x07
 
 #define BMP581_ODR_120HZ        0x8
+#define BMP581_ODR_60HZ         0xE
+#define BMP581_ODR_30HZ         0x13
+#define BMP581_ODR_15HZ         0x16
 
 #define BMP581_MODE_STDBY       0x0
 #define BMP581_MODE_NORMAL      0x1
@@ -167,7 +170,7 @@ typedef struct {
 #define BMP581_INT_ENABLE       0x08
 
 #define BMP581_DEEPSTDBY_DIS    0X80
-#define BMP581_ODR_MASK         0x7C
+#define BMP581_ODR_MASK         0x83
 
 //Defines for LSM6DS032
 #define LSM6DSO32_WRITE_ADDR       0xD4
@@ -236,12 +239,16 @@ uint8_t ADXL375_read_single_byte(uint8_t reg);
 HAL_StatusTypeDef ADXL375_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
 HAL_StatusTypeDef ADXL375_write_single_byte(uint8_t reg, uint8_t data);
 HAL_StatusTypeDef ADXL375_get_acceleration(AccelData_t *pAccelData);
+HAL_StatusTypeDef ADXL375_Deinit(void);
+
 
 HAL_StatusTypeDef BMP581_Init(void);
 uint8_t BMP581_read_single_byte(uint8_t reg);
 HAL_StatusTypeDef BMP581_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t length);
 HAL_StatusTypeDef BMP581_write_single_byte(uint8_t reg, uint8_t data);
 HAL_StatusTypeDef BMP581_get_temperature_pressure(BaroData_t *pbarodata);
+HAL_StatusTypeDef BMP581_Deinit(void);
+
 
 HAL_StatusTypeDef LSM6DSO32_Init(void);
 uint8_t LSM6DSO32_read_single_byte(uint8_t reg);
@@ -249,5 +256,7 @@ HAL_StatusTypeDef LSM6DSO32_read_mult_byte(uint8_t reg, uint8_t *pdata, uint8_t 
 HAL_StatusTypeDef LSM6DSO32_write_single_byte(uint8_t reg, uint8_t data);
 HAL_StatusTypeDef LSM6DSO32_get_acceleration(AccelData_t *pAccelData);
 HAL_StatusTypeDef LSM6DSO32_get_gyro(GyroData_t *pGyroData);
+HAL_StatusTypeDef LSM6DSO32_Deinit(void);
+
 
 
