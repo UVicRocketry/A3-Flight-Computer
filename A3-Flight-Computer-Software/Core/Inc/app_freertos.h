@@ -41,10 +41,10 @@ extern "C" {
 
 typedef union {
   struct {
-    uint16_t can_nodes    : 8;
-    uint16_t cam_1        : 3;
-    uint16_t cam_2        : 3;
-    // uint16_t flight_comp  : 1;
+    uint16_t can_nodes    : 9;
+    uint16_t cam_1        : 2;
+    uint16_t cam_2        : 2;
+    uint16_t flight_comp  : 1;
     uint16_t telem        : 1;
   };
   uint16_t status;
@@ -73,6 +73,9 @@ typedef union {
 #define BMP581_EVENT            0b00000010
 #define LSM6DSO32_GYRO_EVENT    0b00000100
 #define LSM6DSO32_ACCEL_EVENT   0b00001000
+#define SENSOR_INIT             0b00010000
+#define SENSOR_DEINIT           0b00100000
+
 
 
 #define TELEM_ARM_EVENT    0b000000001

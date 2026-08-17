@@ -23,10 +23,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
-#include "stm32h5xx_hal.h"
-#include "stm32h5xx_hal_fdcan.h"
-#include "stm32h5xx_hal_gpio.h"
-#include "stm32h5xx_hal_uart.h"
 
 /* USER CODE END Includes */
 
@@ -162,7 +158,6 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);
-  HAL_TIM_Base_Start_IT(&htim2);
   HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   /* USER CODE END 2 */
 
@@ -555,9 +550,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 2500;
+  htim2.Init.Prescaler = 2499;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 20;
+  htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -961,12 +956,6 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin){
     case BMP581_INT_PIN:
       osThreadFlagsSet(i2cSensorReadTaskHandle, BMP581_EVENT);
       break;
-    case LSM6DSO32_INT1_PIN:
-      osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_ACCEL_EVENT);
-      break;    
-    case LSM6DSO32_INT2_PIN:
-      osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_GYRO_EVENT);
-      break;
   }
 }
 
@@ -990,18 +979,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
     }
     HAL_UART_Receive_IT(&huart1, &telem_buffer, 1);
   }
-}
-
-static void Tone(uint32_t Frequency, uint32_t Duration)
-{
-    TIM2->ARR = (1000000UL / Frequency) - 1; // Set The PWM Frequency
-    TIM2->CCR1 = (TIM2->ARR >> 1); // Set Duty Cycle 50%
-    HAL_Delay(Duration); // Wait For The Tone Duration
-}
- 
-static void noTone()
-{
-    TIM2->CCR1 = 0; // Set Duty Cycle 0%
 }
 
 /* USER CODE END 4 */
@@ -1029,8 +1006,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     osThreadFlagsSet(telemetryHandlerTaskHandle, TELEM_STAT_EVENT);
   }
 
-  if(htim->Instance == TIM3) {
-    osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_GYRO_EVENT| LSM6DSO32_ACCEL_EVENT);
+  if(htim->Instance == TIM2) {
+    osThreadFlagsSet(i2cSensorReadTaskHandle, LSM6DSO32_GYRO_EVENT | LSM6DSO32_ACCEL_EVENT);
   }
   /* USER CODE END Callback 1 */
 }

@@ -1,6 +1,5 @@
 #include "file_system_handler.h"
 #include "app_freertos.h"
-#include "cmsis_os2.h"
 
 int8_t path;
 FATFS file_sys;
@@ -19,6 +18,7 @@ uint8_t float_buf_2[20];
 uint8_t float_buf_3[20];
 
 extern osMessageQueueId_t sensorDataHandle;
+extern fc_status_t fc_stat;
 
 static inline void FS_Init(void);
 static inline void mk_log_dir(void);
@@ -65,49 +65,38 @@ void fileManagementTask(void *argument)
           break;
         case SENSOR_ACCEL_ADXL375:
           sprintf(log_file_path, "hgaccel.csv");
-          ftoa(payload.data.accel.accel_x_G, float_buf_1, 4);
-          ftoa(payload.data.accel.accel_y_G, float_buf_2, 4);
-          ftoa(payload.data.accel.accel_z_G, float_buf_3, 4);
-          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
-                                                float_buf_1,
-                                                float_buf_2,
-                                                float_buf_3);
+                                                payload.data.accel.accel_x_G,
+                                                payload.data.accel.accel_y_G,
+                                                payload.data.accel.accel_z_G);
           break;
         case SENSOR_ACCEL_LSM6DS032:
           sprintf(log_file_path, "lgaccel.csv");
-          ftoa(payload.data.accel.accel_x_G, float_buf_1, 4);
-          ftoa(payload.data.accel.accel_y_G, float_buf_2, 4);
-          ftoa(payload.data.accel.accel_z_G, float_buf_3, 4);
-          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
-                                                float_buf_1,
-                                                float_buf_2,
-                                                float_buf_3);
+                                                payload.data.accel.accel_x_G,
+                                                payload.data.accel.accel_y_G,
+                                                payload.data.accel.accel_z_G);
           break;
         case SENSOR_GYRO:
           sprintf(log_file_path, "gyro.csv");
-          ftoa(payload.data.gyro.pitch_dps, float_buf_1, 4);
-          ftoa(payload.data.gyro.roll_dps, float_buf_2, 4);
-          ftoa(payload.data.gyro.yaw_dps, float_buf_3, 4);
-          size = snprintf(data, 500, "%d:%d:%s,%s,%s,%s\n", payload.time.Hours,
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
-                                                float_buf_1,
-                                                float_buf_2,
-                                                float_buf_3);
+                                                payload.data.gyro.pitch_dps,
+                                                payload.data.gyro.roll_dps,
+                                                payload.data.gyro.yaw_dps);
           break;
         case SENSOR_BAROMETER:
           sprintf(log_file_path, "BMP581.csv");
-          ftoa(payload.data.baro_data.pressure, float_buf_1, 2);
-          ftoa(payload.data.baro_data.temperature, float_buf_2, 4);
-          size = snprintf(data, 500, "%d:%d:%s,%s,%s\n", payload.time.Hours,
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
-                                                float_buf_1,
-                                                float_buf_2);
+                                                payload.data.baro_data.pressure,
+                                                payload.data.baro_data.temperature);
           break;
         default:
           break;
@@ -115,6 +104,9 @@ void fileManagementTask(void *argument)
 
       stat = f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
       stat = f_write(&file, data, size, &bytes_written);
+      if(stat != FR_OK){
+        fc_stat.file_sys = 0;
+      }
       stat = f_close(&file);
     }
   }

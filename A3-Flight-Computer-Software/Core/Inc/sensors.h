@@ -1,5 +1,4 @@
 #include "main.h"
-#include <math.h>
 
 /*----------- Sensor Types -----------*/
 
@@ -27,21 +26,21 @@ typedef struct {
 
 // Accelerometer Data
 typedef struct {
-    float accel_x_G;
-    float accel_y_G;
-    float accel_z_G;
+    int16_t accel_x_G;
+    int16_t accel_y_G;
+    int16_t accel_z_G;
 } AccelData_t;
 
 // Gryoscope Data
 typedef struct {
-    float yaw_dps;
-    float pitch_dps;
-    float roll_dps;
+    int16_t yaw_dps;
+    int16_t pitch_dps;
+    int16_t roll_dps;
 } GyroData_t;
 
 typedef struct {
-    float_t pressure;
-    float_t temperature;
+    int32_t pressure;
+    int32_t temperature;
 } BaroData_t;
 
 
@@ -226,6 +225,7 @@ typedef struct {
 
 #define LSM6DSO32_ODR_416HZ        0x60
 #define LSM6DSO32_ODR_833HZ        0x70
+#define LSM6DSO32_ODR_104HZ        0x40
 #define LSM6DSO32_PWR_DWN          0x00
 #define LSM6DS032_ODR_MASK         0x0F
 

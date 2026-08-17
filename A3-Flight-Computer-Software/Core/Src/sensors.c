@@ -17,7 +17,7 @@ HAL_StatusTypeDef ADXL375_Init(void) {
     data |= 0b10000000;
     ADXL375_write_single_byte(ADXL375_FIFO_CTL, 0);
 
-    ADXL375_write_single_byte(ADXL375_BW_RATE, ADXL375_400_BW);
+    ADXL375_write_single_byte(ADXL375_BW_RATE, ADXL375_100_BW);
 
     data = ADXL375_read_single_byte(ADXL375_DATA_FORMAT);
     data |= 0b10000000;
@@ -25,6 +25,7 @@ HAL_StatusTypeDef ADXL375_Init(void) {
     
     data = ADXL375_read_single_byte(ADXL375_PWR_CTL);
     data |= 0b00001000;
+    data &= ~0b00000100;
     ADXL375_write_single_byte(ADXL375_PWR_CTL, data);
 
     data = ADXL375_read_single_byte(ADXL375_INT_SOURCE);
@@ -72,22 +73,29 @@ HAL_StatusTypeDef ADXL375_write_single_byte(uint8_t reg, uint8_t data) {
 }
 
 HAL_StatusTypeDef ADXL375_get_acceleration(AccelData_t *pAccelData) {
-    uint8_t xdata[2] = {0};
-    uint8_t ydata[2] = {0};
-    uint8_t zdata[2] = {0};
-
-
+    uint8_t data[6] = {0};
     uint8_t stat = ADXL375_read_single_byte(ADXL375_INT_SOURCE);
 
-    ADXL375_read_mult_byte(ADXL375_DATAX0, xdata, 2);
-    ADXL375_read_mult_byte(ADXL375_DATAY0, ydata, 2);
-    ADXL375_read_mult_byte(ADXL375_DATAZ0, zdata, 2);
+    ADXL375_read_mult_byte(ADXL375_DATAX0, data, 6);
 
-    pAccelData->accel_x_G = (float_t)((int16_t)(xdata[1] << 8 | xdata[0]) * 0.049f);
-    pAccelData->accel_y_G = (float_t)((int16_t)(ydata[1] << 8 | ydata[0]) * 0.049f);
-    pAccelData->accel_z_G = (float_t)((int16_t)(zdata[1] << 8 | zdata[0]) * 0.049f);
+    pAccelData->accel_x_G = (int16_t)(data[1] << 8 | data[0]);
+    pAccelData->accel_y_G = (int16_t)(data[3] << 8 | data[2]);
+    pAccelData->accel_z_G = (int16_t)(data[5] << 8 | data[4]);
 
     return HAL_OK;
+}
+
+HAL_StatusTypeDef ADXL375_Deinit(void){
+    uint8_t data = 0;
+
+    data = ADXL375_read_single_byte(ADXL375_INT_ENABLE);
+    data &= ~0b10000000;
+    ADXL375_write_single_byte(ADXL375_INT_ENABLE, data);
+
+    data = ADXL375_read_single_byte(ADXL375_PWR_CTL);
+    data |= 0b00000100;
+    data &= ~0b00001000;
+    ADXL375_write_single_byte(ADXL375_PWR_CTL, data);
 }
 
 HAL_StatusTypeDef BMP581_Init(void){
@@ -169,11 +177,25 @@ HAL_StatusTypeDef BMP581_get_temperature_pressure(BaroData_t *pbarodata){
 
     BMP581_read_mult_byte(BMP581_TEMP_DATA_0, data, 6);
 
-    pbarodata->temperature = (float_t)(1.52587891e-5 * (int32_t)( data[2] << 16 | data[1] << 8 | data[0]));
-    pbarodata->pressure = (float_t)(1.525625e-2 * (int32_t)( data[5] << 16 | data[4] << 8 | data[3]));
+    pbarodata->temperature = (int32_t)( data[2] << 16 | data[1] << 8 | data[0]);
+    pbarodata->pressure = (int32_t)( data[5] << 16 | data[4] << 8 | data[3]);
     
     return HAL_OK;
 }
+
+HAL_StatusTypeDef BMP581_Deinit(void){
+    uint8_t data;
+
+    data = BMP581_read_single_byte(BMP581_INT_CONFIG);
+    data &= ~(BMP581_INT_ENABLE);
+    BMP581_write_single_byte(BMP581_INT_CONFIG, data);
+
+    data = BMP581_read_single_byte(BMP581_ODR_CONFIG);
+    data &= ~0x02;
+    data |= BMP581_DEEPSTDBY_DIS;
+    BMP581_write_single_byte(BMP581_ODR_CONFIG, data);
+}
+
 
 HAL_StatusTypeDef LSM6DSO32_Init() {
     uint8_t data = LSM6DSO32_read_single_byte(LSM6DSO32_DEV_ID_REG);
@@ -191,12 +213,12 @@ HAL_StatusTypeDef LSM6DSO32_Init() {
 
     data = LSM6DSO32_read_single_byte(LSM6DSO32_CTRL1_XL);
     data &= LSM6DS032_ODR_MASK;
-    data |= LSM6DSO32_ODR_416HZ | LSM6DS032_FULL_SCALE;
+    data |= LSM6DSO32_ODR_104HZ | LSM6DS032_FULL_SCALE;
     LSM6DSO32_write_single_byte(LSM6DSO32_CTRL1_XL, data);
 
     data = LSM6DSO32_read_single_byte(LSM6DSO32_CTRL2_G);
     data &= LSM6DS032_ODR_MASK;
-    data |= LSM6DSO32_ODR_416HZ | LSM6DS032_FULL_SCALE;
+    data |= LSM6DSO32_ODR_104HZ | LSM6DS032_FULL_SCALE;
     LSM6DSO32_write_single_byte(LSM6DSO32_CTRL2_G, data);
 
     data = LSM6DSO32_read_single_byte(LSM6DSO32_TAP_CFG_2);
@@ -252,9 +274,9 @@ HAL_StatusTypeDef LSM6DSO32_get_acceleration(AccelData_t *pAccelData){
         return HAL_ERROR;
     }
 
-    pAccelData->accel_x_G = (float_t)((int16_t)(data[1] << 8 | data[0]) * 0.976e-3f);
-    pAccelData->accel_y_G = (float_t)((int16_t)(data[3] << 8 | data[2]) * 0.976e-3f);
-    pAccelData->accel_z_G = (float_t)((int16_t)(data[5] << 8 | data[4]) * 0.976e-3f);
+    pAccelData->accel_x_G = (int16_t)(data[1] << 8 | data[0]);
+    pAccelData->accel_y_G = (int16_t)(data[3] << 8 | data[2]);
+    pAccelData->accel_z_G = (int16_t)(data[5] << 8 | data[4]);
 
     return HAL_OK;
 }
@@ -267,9 +289,16 @@ HAL_StatusTypeDef LSM6DSO32_get_gyro(GyroData_t *pGyroData){
         return HAL_ERROR;
     }
 
-    pGyroData->pitch_dps = (float_t)((int16_t)(data[1] << 8 | data[0]) * 0.070);
-    pGyroData->roll_dps = (float_t)((int16_t)(data[3] << 8 | data[2]) * 0.070);
-    pGyroData->yaw_dps = (float_t)((int16_t)(data[5] << 8 | data[4]) * 0.070);
+    pGyroData->pitch_dps = (int16_t)(data[1] << 8 | data[0]);
+    pGyroData->roll_dps = (int16_t)(data[3] << 8 | data[2]);
+    pGyroData->yaw_dps = (int16_t)(data[5] << 8 | data[4]);
 
     return HAL_OK;
+}
+
+HAL_StatusTypeDef LSM6DSO32_Deinit(void){
+    uint8_t data = 0;
+    data = LSM6DSO32_read_single_byte(LSM6DSO32_TAP_CFG_2);
+    data &= ~LSM6DSO32_INT_EN;
+    LSM6DSO32_write_single_byte(LSM6DSO32_TAP_CFG_2, data);
 }

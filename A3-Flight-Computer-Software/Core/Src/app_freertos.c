@@ -46,6 +46,7 @@
 extern RTC_HandleTypeDef hrtc;
 extern FDCAN_HandleTypeDef hfdcan2;
 extern UART_HandleTypeDef huart1;
+extern TIM_HandleTypeDef htim2;
 
 fc_status_t fc_stat = {0};
 
@@ -120,7 +121,7 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of sensorData */
-  sensorDataHandle = osMessageQueueNew (50, sizeof(SensorPayload_t), &sensorData_attributes);
+  sensorDataHandle = osMessageQueueNew (90, sizeof(SensorPayload_t), &sensorData_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -201,8 +202,9 @@ void telemetryHandler(void *argument)
       stat_msg.can_nodes = can_status;
       can_status = 0;
 
-      //stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
+      stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
       fc_stat.status = 0;
+      fc_stat.file_sys = 1;
       taskEXIT_CRITICAL();
 
       stat_msg.cam_1 = cam1_stat;
@@ -236,16 +238,11 @@ void i2cSensorReadTask(void *argument)
   AccelData_t acceleration;
   GyroData_t gyro_data;
   BaroData_t baro_data;
-  
-
-  ADXL375_Init();
-  BMP581_Init();
-  LSM6DSO32_Init();
 
   /* Infinite loop */
   for(;;)
   {
-    flags = osThreadFlagsWait(BMP581_EVENT | ADXL375_EVENT, osFlagsWaitAny, osWaitForever);
+    flags = osThreadFlagsWait(SENSOR_INIT | SENSOR_DEINIT | LSM6DSO32_GYRO_EVENT | LSM6DSO32_ACCEL_EVENT | BMP581_EVENT | ADXL375_EVENT, osFlagsWaitAny, osWaitForever);
 
     if(flags & ADXL375_EVENT){
       HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
@@ -311,6 +308,18 @@ void i2cSensorReadTask(void *argument)
       } else {
         //Log error
       }
+    }
+    if (flags & SENSOR_INIT) {
+        ADXL375_Init();
+        BMP581_Init();
+        LSM6DSO32_Init();
+        HAL_TIM_Base_Stop_IT(&htim2);
+    }
+    if (flags & SENSOR_DEINIT) {
+        ADXL375_Deinit();
+        BMP581_Deinit();
+        LSM6DSO32_Deinit();
+        HAL_TIM_Base_Start_IT(&htim2);   
     }
   }
   /* USER CODE END i2cSensorReadTask */
