@@ -44,28 +44,13 @@
 /* USER CODE BEGIN Variables */
 
 extern RTC_HandleTypeDef hrtc;
-extern FDCAN_HandleTypeDef hfdcan2;
-extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim2;
-
-fc_status_t fc_stat = {0};
-
-volatile uint16_t can_status = 0;
-
-
 /* USER CODE END Variables */
 /* Definitions for fileManagementTask */
 osThreadId_t fileManagementTaskHandle;
 const osThreadAttr_t fileManagementTask_attributes = {
   .name = "fileManagementTask",
   .priority = (osPriority_t) osPriorityNormal3,
-  .stack_size = 1024 * 4
-};
-/* Definitions for telemetryHandlerTask */
-osThreadId_t telemetryHandlerTaskHandle;
-const osThreadAttr_t telemetryHandlerTask_attributes = {
-  .name = "telemetryHandlerTask",
-  .priority = (osPriority_t) osPriorityNormal5,
   .stack_size = 1024 * 4
 };
 /* Definitions for i2cSensorReadTask */
@@ -129,9 +114,6 @@ void MX_FREERTOS_Init(void) {
   /* creation of fileManagementTask */
   fileManagementTaskHandle = osThreadNew(fileManagementTask, NULL, &fileManagementTask_attributes);
 
-  /* creation of telemetryHandlerTask */
-  telemetryHandlerTaskHandle = osThreadNew(telemetryHandler, NULL, &telemetryHandlerTask_attributes);
-
   /* creation of i2cSensorReadTask */
   i2cSensorReadTaskHandle = osThreadNew(i2cSensorReadTask, NULL, &i2cSensorReadTask_attributes);
 
@@ -144,82 +126,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-/* USER CODE BEGIN Header_telemetryHandler */
-/**
-* @brief Function implementing the telemetryHandlerTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_telemetryHandler */
-void telemetryHandler(void *argument)
-{
-  /* USER CODE BEGIN telemetryHandlerTask */
-  cam_status_t cam1_stat;
-  cam_status_t cam2_stat;
-  int32_t flags;
-  FDCAN_TxHeaderTypeDef txHeader = {0};
-  sys_status_t stat_msg = {0};
-  HAL_StatusTypeDef uart_flags;
-  
- 
-  for(;;)
-  {
-    flags = osThreadFlagsWait(TELEM_ARM_EVENT | TELEM_DISARM_EVENT | TELEM_STAT_EVENT, osFlagsWaitAny, osWaitForever);
-    if (flags < 0){
-      // osThreadFlagsClear()
-    } else if(flags & TELEM_ARM_EVENT) {
-      cam1_stat = camera_start(CAM1);
-      if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
-        //log error
-      }
-
-      cam2_stat = camera_start(CAM2);
-      if(cam2_stat == REPLY_ERROR || cam2_stat == REPLY_INVALID_CMD){
-        //log error
-      }
-
-      txHeader.Identifier = CAN_NODE_WAKE_ID;
-      HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
-    } else if(flags & TELEM_DISARM_EVENT) {
-      cam1_stat = camera_stop(CAM1);
-      if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
-        //log error
-      }
-
-      cam2_stat = camera_stop(CAM2);
-      if(cam2_stat == REPLY_ERROR || cam2_stat == REPLY_INVALID_CMD){
-        //log error
-      }
-
-      txHeader.Identifier = CAN_NODE_SLEEP_ID;
-      HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
-    } else if(flags & TELEM_STAT_EVENT) {
-
-      cam1_stat = camera_status(CAM1);
-      cam2_stat = camera_status(CAM2);
-
-      taskENTER_CRITICAL();
-      stat_msg.can_nodes = can_status;
-      can_status = 0;
-
-      stat_msg.flight_comp = (fc_stat.status & FC_OK) == FC_OK ? 1 : 0;
-      fc_stat.status = 0;
-      fc_stat.file_sys = 1;
-      taskEXIT_CRITICAL();
-
-      stat_msg.cam_1 = cam1_stat;
-      stat_msg.cam_2 = cam2_stat;
-
-      uart_flags = HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100);
-
-      if(uart_flags){
-        stat_msg.status = 0x0BAD;
-      }
-    }
-  }
-  /* USER CODE END telemetryHandlerTask */
-}
-
 /* USER CODE BEGIN Header_i2cSensorReadTask */
 /**
 * @brief Function implementing the i2cSensorReadTask thread.
@@ -239,6 +145,10 @@ void i2cSensorReadTask(void *argument)
   GyroData_t gyro_data;
   BaroData_t baro_data;
 
+  ADXL375_Init();
+  BMP581_Init();
+  LSM6DSO32_Init();
+  HAL_TIM_Base_Start_IT(&htim2);   
   /* Infinite loop */
   for(;;)
   {
@@ -252,8 +162,6 @@ void i2cSensorReadTask(void *argument)
         payload.sensor_type = SENSOR_ACCEL_ADXL375;
         payload.time = time;
         payload.data.accel = acceleration;
-
-        fc_stat.hg_accel = 1;
 
         osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
@@ -270,8 +178,6 @@ void i2cSensorReadTask(void *argument)
         payload.time = time;
         payload.data.baro_data = baro_data;
 
-        fc_stat.barometer = 1;
-
         osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
@@ -285,8 +191,6 @@ void i2cSensorReadTask(void *argument)
         payload.sensor_type = SENSOR_ACCEL_LSM6DS032;
         payload.time = time;
         payload.data.accel = acceleration;
-
-        fc_stat.lg_accel = 1;
 
         osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
@@ -302,24 +206,10 @@ void i2cSensorReadTask(void *argument)
         payload.time = time;
         payload.data.gyro = gyro_data;
 
-        fc_stat.lg_accel = 1;
-
         osMessageQueuePut(sensorDataHandle, &payload, 0, 0);
       } else {
         //Log error
       }
-    }
-    if (flags & SENSOR_INIT) {
-        ADXL375_Init();
-        BMP581_Init();
-        LSM6DSO32_Init();
-        HAL_TIM_Base_Stop_IT(&htim2);
-    }
-    if (flags & SENSOR_DEINIT) {
-        ADXL375_Deinit();
-        BMP581_Deinit();
-        LSM6DSO32_Deinit();
-        HAL_TIM_Base_Start_IT(&htim2);   
     }
   }
   /* USER CODE END i2cSensorReadTask */

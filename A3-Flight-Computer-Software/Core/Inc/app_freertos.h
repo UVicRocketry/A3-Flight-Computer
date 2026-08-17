@@ -33,7 +33,6 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sensors.h"
-#include "camera_driver.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -94,7 +93,6 @@ typedef union {
 
 /* USER CODE END EM */
 extern osThreadId_t fileManagementTaskHandle;
-extern osThreadId_t telemetryHandlerTaskHandle;
 extern osThreadId_t i2cSensorReadTaskHandle;
 extern osMessageQueueId_t sensorDataHandle;
 
@@ -104,7 +102,6 @@ extern osMessageQueueId_t sensorDataHandle;
 /* USER CODE END FunctionPrototypes */
 
 extern void fileManagementTask(void *argument);
-void telemetryHandler(void *argument);
 void i2cSensorReadTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */

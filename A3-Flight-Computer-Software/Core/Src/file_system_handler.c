@@ -40,28 +40,20 @@ void fileManagementTask(void *argument)
   {
     if(osMessageQueueGet(sensorDataHandle, &payload, NULL, osWaitForever) == osOK){
       seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
-      ftoa(seconds, seconds_buf,6);
+      ftoa(seconds, seconds_buf, 6);
       switch (payload.sensor_type) {
         case SENSOR_STRAIN:
-          sprintf(log_file_path, "strain-%X.csv", payload.node_id);
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
-                                                    payload.time.Minutes,
-                                                    seconds_buf,
-                                                    payload.data.strain.left_gauge_uV,
-                                                    payload.data.strain.center_gauge_uV,
-                                                    payload.data.strain.right_gauge_uV);
-          break;
-        case SENSOR_TEMPERATURE:
           break;
         case SENSOR_RTD:
-          sprintf(log_file_path, "rtd-%X.csv", payload.node_id);
-          size = snprintf(data, 500, "%d:%d:%s,%d\n", payload.time.Hours,
-                                                payload.time.Minutes,
-                                                seconds_buf,
-                                                payload.data.temperature_mv);
           break;
         case SENSOR_PRESSURE:
-          
+          sprintf(log_file_path, "pressure%X.csv", payload.node_id);
+          ftoa(payload.data.pressure, float_buf_1, 6);
+          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+                                                payload.time.Minutes,
+                                                seconds_buf,
+                                                float_buf_1
+                                                );
           break;
         case SENSOR_ACCEL_ADXL375:
           sprintf(log_file_path, "hgaccel.csv");
@@ -104,9 +96,6 @@ void fileManagementTask(void *argument)
 
       stat = f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
       stat = f_write(&file, data, size, &bytes_written);
-      if(stat != FR_OK){
-        fc_stat.file_sys = 0;
-      }
       stat = f_close(&file);
     }
   }

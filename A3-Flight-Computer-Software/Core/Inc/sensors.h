@@ -50,7 +50,7 @@ typedef struct {
 typedef union {
     StrainData_t strain;
     float_t temperature;
-    float_t pressure;
+    uint32_t pressure;
     AccelData_t accel;
     GyroData_t gyro;
     int16_t temperature_mv;
