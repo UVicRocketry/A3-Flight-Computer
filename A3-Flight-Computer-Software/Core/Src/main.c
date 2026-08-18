@@ -931,9 +931,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   switch(rxHeader.FilterIndex) {
     case(CAN_STRAIN_FILTER_INDEX):
       payload.sensor_type = SENSOR_STRAIN;
-      payload.data.strain.left_gauge_uV = data[1] << 8 | data[0];
-      payload.data.strain.center_gauge_uV = data[3] << 8 | data[2];
-      payload.data.strain.right_gauge_uV = data[5] << 8 | data[4];
+      payload.data.strain.left_gauge_uV = data[0] << 8 | data[1];
+      payload.data.strain.center_gauge_uV = data[2] << 8 | data[3];
+      payload.data.strain.right_gauge_uV = data[4] << 8 | data[5];
+      payload.data.strain.channel_id = data[6];
       can_status |= 1 << ((payload.node_id) & 0x00F);
       break;
     case(CAN_TEMP_FILTER_INDEX):

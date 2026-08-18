@@ -22,6 +22,7 @@ typedef struct {
     int16_t left_gauge_uV;
     int16_t center_gauge_uV;
     int16_t right_gauge_uV;
+    uint8_t channel_id;
 } StrainData_t;
 
 // Accelerometer Data
