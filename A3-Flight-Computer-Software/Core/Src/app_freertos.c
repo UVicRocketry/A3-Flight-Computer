@@ -20,8 +20,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "ff.h"
 
 /* USER CODE END Includes */
 
@@ -65,7 +68,7 @@ const osThreadAttr_t fileManagementTask_attributes = {
 osThreadId_t telemetryHandlerTaskHandle;
 const osThreadAttr_t telemetryHandlerTask_attributes = {
   .name = "telemetryHandlerTask",
-  .priority = (osPriority_t) osPriorityNormal5,
+  .priority = (osPriority_t) osPriorityNormal2,
   .stack_size = 1024 * 4
 };
 /* Definitions for i2cSensorReadTask */
@@ -180,6 +183,7 @@ void telemetryHandler(void *argument)
 
       txHeader.Identifier = CAN_NODE_WAKE_ID;
       HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
+      osThreadFlagsSet(i2cSensorReadTaskHandle, SENSOR_INIT);
     } else if(flags & TELEM_DISARM_EVENT) {
       cam1_stat = camera_stop(CAM1);
       if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
@@ -193,6 +197,7 @@ void telemetryHandler(void *argument)
 
       txHeader.Identifier = CAN_NODE_SLEEP_ID;
       HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
+      osThreadFlagsSet(i2cSensorReadTaskHandle, SENSOR_DEINIT);
     } else if(flags & TELEM_STAT_EVENT) {
 
       cam1_stat = camera_status(CAM1);
@@ -313,13 +318,13 @@ void i2cSensorReadTask(void *argument)
         ADXL375_Init();
         BMP581_Init();
         LSM6DSO32_Init();
-        HAL_TIM_Base_Stop_IT(&htim2);
+        HAL_TIM_Base_Start_IT(&htim2);
     }
     if (flags & SENSOR_DEINIT) {
         ADXL375_Deinit();
         BMP581_Deinit();
         LSM6DSO32_Deinit();
-        HAL_TIM_Base_Start_IT(&htim2);   
+        HAL_TIM_Base_Stop_IT(&htim2);   
     }
   }
   /* USER CODE END i2cSensorReadTask */

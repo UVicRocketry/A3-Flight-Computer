@@ -1,10 +1,30 @@
 #include "file_system_handler.h"
 #include "app_freertos.h"
+#include <string.h>
 
 int8_t path;
 FATFS file_sys;
 FIL file;
-uint8_t data[500];
+uint8_t data[64] = {0};
+uint8_t strain_buff[512] = {0};
+uint16_t strain_buff_size = 0;
+uint8_t rtd_buff[512] = {0};
+uint16_t rtd_buff_size = 0;
+uint8_t hg_buff[512] = {0};
+uint16_t hg_buff_size = 0;
+uint8_t lg_buff[512] = {0};
+uint16_t lg_buff_size = 0;
+uint8_t gyro_buff[512] = {0};
+uint16_t gyro_buff_size = 0;
+uint8_t baro_buff[512] = {0};
+uint16_t baro_buff_size = 0;
+
+const uint8_t null_buff[512] = {0};
+
+uint8_t log_trigger = 0;
+
+
+
 uint8_t buff[15];
 FRESULT stat = FR_NO_FILESYSTEM;
 int size = 0;
@@ -13,9 +33,6 @@ SensorPayload_t payload;
 float_t seconds;
 uint8_t log_file_path[17];
 uint8_t seconds_buf[20];
-uint8_t float_buf_1[20];
-uint8_t float_buf_2[20];
-uint8_t float_buf_3[20];
 
 extern osMessageQueueId_t sensorDataHandle;
 extern fc_status_t fc_stat;
@@ -40,74 +57,132 @@ void fileManagementTask(void *argument)
   {
     if(osMessageQueueGet(sensorDataHandle, &payload, NULL, osWaitForever) == osOK){
       seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
-      ftoa(seconds, seconds_buf,6);
+      ftoa(seconds, seconds_buf, 6);
       switch (payload.sensor_type) {
         case SENSOR_STRAIN:
-          sprintf(log_file_path, "strain-%X.csv", payload.node_id);
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+          snprintf(data, 100, "%d:%d:%s,%X,%d,%d,%d\n", payload.time.Hours,
                                                     payload.time.Minutes,
                                                     seconds_buf,
+                                                    payload.node_id,
                                                     payload.data.strain.left_gauge_uV,
                                                     payload.data.strain.center_gauge_uV,
                                                     payload.data.strain.right_gauge_uV);
+          if((64 + strain_buff_size) > 512) {
+            stat = f_open(&file, "strain.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, strain_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(strain_buff, data, 64);
+            strain_buff_size = 64;
+          } else {
+            memcpy(strain_buff + strain_buff_size, data, 64);
+            strain_buff_size += 64;
+          }
+          memcpy(data, null_buff, 64);
           break;
         case SENSOR_TEMPERATURE:
           break;
         case SENSOR_RTD:
-          sprintf(log_file_path, "rtd-%X.csv", payload.node_id);
-          size = snprintf(data, 500, "%d:%d:%s,%d\n", payload.time.Hours,
+          snprintf(data, 64, "%d:%d:%s,%X,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
+                                                payload.node_id,
                                                 payload.data.temperature_mv);
+          if((64 + rtd_buff_size) > 512) {
+            stat = f_open(&file, "rtd.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, rtd_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(rtd_buff, data, 64);
+            rtd_buff_size = 64;
+          } else {
+            memcpy(rtd_buff + rtd_buff_size, data, 64);
+            rtd_buff_size += 64;
+          }
+          memcpy(data, null_buff, 64);
           break;
         case SENSOR_PRESSURE:
           
           break;
         case SENSOR_ACCEL_ADXL375:
-          sprintf(log_file_path, "hgaccel.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+          snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
                                                 payload.data.accel.accel_x_G,
                                                 payload.data.accel.accel_y_G,
                                                 payload.data.accel.accel_z_G);
+          if((64 + hg_buff_size) > 512) {
+            stat = f_open(&file, "hgaccel.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, hg_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(hg_buff, data, 64);
+            hg_buff_size = 64;
+          } else {
+            memcpy(hg_buff + hg_buff_size, data, 64);
+            hg_buff_size += 64;
+          }
+          strcpy(data, null_buff);
           break;
         case SENSOR_ACCEL_LSM6DS032:
-          sprintf(log_file_path, "lgaccel.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+          snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
                                                 payload.data.accel.accel_x_G,
                                                 payload.data.accel.accel_y_G,
                                                 payload.data.accel.accel_z_G);
+          if((64 + lg_buff_size) > 512) {
+            stat = f_open(&file, "lgaccel.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, lg_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(lg_buff, data, 64);
+            lg_buff_size = 64;
+          } else {
+            memcpy(lg_buff + lg_buff_size, data, 64);
+            lg_buff_size += 64;
+          }
+          memcpy(data, null_buff, 64);
           break;
         case SENSOR_GYRO:
-          sprintf(log_file_path, "gyro.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+          snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
                                                 payload.data.gyro.pitch_dps,
                                                 payload.data.gyro.roll_dps,
                                                 payload.data.gyro.yaw_dps);
+          if((64 + gyro_buff_size) > 512) {
+            stat = f_open(&file, "gyro.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, gyro_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(gyro_buff, data, 64);
+            gyro_buff_size = 64;
+          } else {
+            memcpy(gyro_buff + gyro_buff_size, data, 64);
+            gyro_buff_size += 64;
+          }
+          memcpy(data, null_buff, 64);
           break;
         case SENSOR_BAROMETER:
-          sprintf(log_file_path, "BMP581.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d\n", payload.time.Hours,
+          snprintf(data, 100, "%d:%d:%s,%d,%d\n", payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
                                                 payload.data.baro_data.pressure,
                                                 payload.data.baro_data.temperature);
+          if((64 + baro_buff_size) > 512) {
+            stat = f_open(&file, "baro.csv", FA_WRITE|FA_OPEN_APPEND);
+            stat = f_write(&file, baro_buff, 512, &bytes_written);
+            stat = f_close(&file);
+            memcpy(baro_buff, data, 64);
+            baro_buff_size = 64;
+          } else {
+            memcpy(baro_buff + baro_buff_size, data, 64);
+            baro_buff_size += 64;
+          }
+          memcpy(data, null_buff, 64);
           break;
         default:
           break;
       }
-
-      stat = f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-      stat = f_write(&file, data, size, &bytes_written);
       if(stat != FR_OK){
         fc_stat.file_sys = 0;
       }
-      stat = f_close(&file);
     }
   }
   /* USER CODE END fileManagementTask */
