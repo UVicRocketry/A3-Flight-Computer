@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "app_freertos.h"
+#include "camera_driver.h"
 
 
 /* Private includes ----------------------------------------------------------*/
@@ -182,6 +183,13 @@ void telemetryHandler(void *argument)
       txHeader.Identifier = CAN_NODE_WAKE_ID;
       HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
       osThreadFlagsSet(i2cSensorReadTaskHandle, SENSOR_INIT);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, 1);
+      osDelay(500);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, 0);
+      osDelay(500);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, 1);
+      osDelay(500);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, 0);
     } else if(flags & TELEM_DISARM_EVENT) {
       cam1_stat = camera_stop(CAM1);
       if(cam1_stat == REPLY_ERROR || cam1_stat == REPLY_INVALID_CMD){
@@ -210,8 +218,45 @@ void telemetryHandler(void *argument)
       fc_stat.file_sys = 1;
       taskEXIT_CRITICAL();
 
-      stat_msg.cam_1 = cam1_stat;
-      stat_msg.cam_2 = cam2_stat;
+      switch (cam1_stat) {
+        case REPLY_STOPPED:
+        case REPLY_STOPPING:
+          stat_msg.cam_1 = CAMERA_STOP;
+          break;
+        case REPLY_STARTING:
+          stat_msg.cam_1 = CAMERA_START;
+          break;
+        case REPLY_RECORDING:
+          stat_msg.cam_1 = CAMERA_RECORD;
+          break;
+        case REPLY_ERROR:
+        case REPLY_INVALID_CMD:
+        case REPLY_BUSY:
+        default:
+          stat_msg.cam_1 = CAMERA_ERROR;
+          break;
+      }
+      
+       switch (cam2_stat) {
+        case REPLY_STOPPED:
+        case REPLY_STOPPING:
+          stat_msg.cam_2 = CAMERA_STOP;
+          break;
+        case REPLY_STARTING:
+          stat_msg.cam_2 = CAMERA_START;
+          break;
+        case REPLY_RECORDING:
+          stat_msg.cam_2 = CAMERA_RECORD;
+          break;
+        case REPLY_ERROR:
+        case REPLY_INVALID_CMD:
+        case REPLY_BUSY:
+        default:
+          stat_msg.cam_2 = CAMERA_ERROR;
+          break;
+      }
+      
+      stat_msg.dummy = ~stat_msg.dummy;
 
       uart_flags = HAL_UART_Transmit(&huart1, (uint8_t *)&stat_msg.status, sizeof(sys_status_t), 100);
 

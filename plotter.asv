@@ -1,0 +1,13 @@
+strain_data_raw = readtable("STRAIN.CSV", ReadVariableNames=false);
+
+rf = rowfilter(strain_data_raw);
+
+for x = 0:8
+    figure
+    hold on
+    plot(strain_data_raw(rf.Var2 == x, :).Var1, strain_data_raw(rf.Var2 == x, :).Var3);
+    plot(strain_data_raw(rf.Var2 == x, :).Var1, strain_data_raw(rf.Var2 == x, :).Var4);
+    plot(strain_data_raw(rf.Var2 == x, :).Var1, strain_data_raw(rf.Var2 == x, :).Var5);
+    
+    hold off
+end

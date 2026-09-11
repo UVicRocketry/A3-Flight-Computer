@@ -45,6 +45,7 @@ typedef union {
     uint16_t cam_1        : 2;
     uint16_t cam_2        : 2;
     uint16_t flight_comp  : 1;
+    uint16_t dummy        : 1;
     uint16_t telem        : 1;
   };
   uint16_t status;
@@ -76,8 +77,6 @@ typedef union {
 #define SENSOR_INIT             0b00010000
 #define SENSOR_DEINIT           0b00100000
 
-
-
 #define TELEM_ARM_EVENT    0b000000001
 #define TELEM_DISARM_EVENT 0b000000010
 #define TELEM_STAT_EVENT   0b000000100
@@ -87,6 +86,10 @@ typedef union {
 
 #define FC_OK 0XF
 
+#define CAMERA_STOP 0x0
+#define CAMERA_START 0x1
+#define CAMERA_RECORD 0x2
+#define CAMERA_ERROR 0x3
 /* USER CODE END PD */
 
 /* Exported macro -------------------------------------------------------------*/
