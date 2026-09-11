@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_freertos.h"
+#include "stm32h5xx_hal.h"
+#include "stm32h5xx_hal_fdcan.h"
 
 /* USER CODE END Includes */
 
@@ -135,6 +137,11 @@ int main(void)
   MX_TIM2_Init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
+  HAL_Delay(5000);
+  FDCAN_TxHeaderTypeDef txHeader = {0};
+  txHeader.Identifier = CAN_NODE_WAKE_ID;
+  HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan2, &txHeader, NULL);
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -670,13 +677,13 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     //implement error logging
   }
 
-  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BCD);
-  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BCD);
+  HAL_RTC_GetTime(&hrtc, &timestamp,RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
   payload.node_id = rxHeader.Identifier;
   payload.time = timestamp;
   payload.sensor_type = SENSOR_PRESSURE;
 
-  payload.data.pressure = data[3] << 24 | data[2] << 16 | data[1] << 8 | data[0];
+  memcpy(&payload.data.pressure, data, 4);
 
   osMessageQueuePut(sensorDataHandle, &payload, 0,0);
   HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);

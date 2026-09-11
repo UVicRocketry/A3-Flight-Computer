@@ -4,7 +4,22 @@
 int8_t path;
 FATFS file_sys;
 FIL file;
-uint8_t data[500];
+uint8_t data[64] = {0};
+uint8_t pressure_buff[512] = {0};
+uint16_t pressure_buff_size = 0;
+uint8_t hg_buff[512] = {0};
+uint16_t hg_buff_size = 0;
+uint8_t lg_buff[512] = {0};
+uint16_t lg_buff_size = 0;
+uint8_t gyro_buff[512] = {0};
+uint16_t gyro_buff_size = 0;
+uint8_t baro_buff[512] = {0};
+uint16_t baro_buff_size = 0;
+
+const uint8_t null_buff[512] = {0};
+
+uint8_t log_trigger = 0;
+
 uint8_t buff[15];
 FRESULT stat = FR_NO_FILESYSTEM;
 int size = 0;
@@ -13,9 +28,13 @@ SensorPayload_t payload;
 float_t seconds;
 uint8_t log_file_path[17];
 uint8_t seconds_buf[20];
-uint8_t float_buf_1[20];
-uint8_t float_buf_2[20];
-uint8_t float_buf_3[20];
+uint8_t float_buff[50
+];
+
+uint32_t free_clusters = 0;
+uint32_t free_sectors = 0;
+
+FATFS* file_sys_ref = &file_sys;
 
 extern osMessageQueueId_t sensorDataHandle;
 extern fc_status_t fc_stat;
@@ -39,64 +58,114 @@ void fileManagementTask(void *argument)
   for(;;)
   {
     if(osMessageQueueGet(sensorDataHandle, &payload, NULL, osWaitForever) == osOK){
-      seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
-      ftoa(seconds, seconds_buf, 6);
-      switch (payload.sensor_type) {
-        case SENSOR_STRAIN:
-          break;
-        case SENSOR_RTD:
-          break;
-        case SENSOR_PRESSURE:
-          sprintf(log_file_path, "pressure%X.csv", payload.node_id);
-          ftoa(payload.data.pressure, float_buf_1, 6);
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+      f_getfree(&path, &free_clusters, &file_sys_ref);
+      free_sectors = free_clusters * file_sys_ref->n_fatent;
+      if(free_sectors > 1000){
+        seconds = (float_t)payload.time.Seconds + (float_t)(payload.time.SecondFraction - payload.time.SubSeconds)/(payload.time.SecondFraction - 1);
+        ftoa(seconds, seconds_buf, 5);
+        switch (payload.sensor_type) {
+          case SENSOR_STRAIN:
+            break;
+          case SENSOR_RTD:
+            break;
+          case SENSOR_PRESSURE:
+            ftoa(payload.data.pressure, float_buff, 5);
+            snprintf(data, 100, "%d:%d:%s,%X,%s\n",payload.time.Hours,
                                                 payload.time.Minutes,
                                                 seconds_buf,
-                                                float_buf_1
-                                                );
-          break;
-        case SENSOR_ACCEL_ADXL375:
-          sprintf(log_file_path, "hgaccel.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
-                                                payload.time.Minutes,
-                                                seconds_buf,
-                                                payload.data.accel.accel_x_G,
-                                                payload.data.accel.accel_y_G,
-                                                payload.data.accel.accel_z_G);
-          break;
-        case SENSOR_ACCEL_LSM6DS032:
-          sprintf(log_file_path, "lgaccel.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
-                                                payload.time.Minutes,
-                                                seconds_buf,
-                                                payload.data.accel.accel_x_G,
-                                                payload.data.accel.accel_y_G,
-                                                payload.data.accel.accel_z_G);
-          break;
-        case SENSOR_GYRO:
-          sprintf(log_file_path, "gyro.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
-                                                payload.time.Minutes,
-                                                seconds_buf,
-                                                payload.data.gyro.pitch_dps,
-                                                payload.data.gyro.roll_dps,
-                                                payload.data.gyro.yaw_dps);
-          break;
-        case SENSOR_BAROMETER:
-          sprintf(log_file_path, "BMP581.csv");
-          size = snprintf(data, 500, "%d:%d:%s,%d,%d\n", payload.time.Hours,
-                                                payload.time.Minutes,
-                                                seconds_buf,
-                                                payload.data.baro_data.pressure,
-                                                payload.data.baro_data.temperature);
-          break;
-        default:
-          break;
+                                                payload.node_id,
+                                                float_buff);
+            if((64 + pressure_buff_size) > 512) {
+              stat = f_open(&file, "pports.csv", FA_WRITE|FA_OPEN_APPEND);
+              stat = f_write(&file, pressure_buff, 512, &bytes_written);
+              stat = f_close(&file);
+              memcpy(pressure_buff, data, 64);
+              pressure_buff_size = 64;
+            } else {
+              memcpy(pressure_buff + pressure_buff_size, data, 64);
+              pressure_buff_size += 64;
+            }
+            strcpy(data, null_buff);
+            break;
+          case SENSOR_ACCEL_ADXL375:
+            snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+                                                  payload.time.Minutes,
+                                                  seconds_buf,
+                                                  payload.data.accel.accel_x_G,
+                                                  payload.data.accel.accel_y_G,
+                                                  payload.data.accel.accel_z_G);
+            if((64 + hg_buff_size) > 512) {
+              stat = f_open(&file, "hgaccel.csv", FA_WRITE|FA_OPEN_APPEND);
+              stat = f_write(&file, hg_buff, 512, &bytes_written);
+              stat = f_close(&file);
+              memcpy(hg_buff, data, 64);
+              hg_buff_size = 64;
+            } else {
+              memcpy(hg_buff + hg_buff_size, data, 64);
+              hg_buff_size += 64;
+            }
+            strcpy(data, null_buff);
+            break;
+          case SENSOR_ACCEL_LSM6DS032:
+            snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+                                                  payload.time.Minutes,
+                                                  seconds_buf,
+                                                  payload.data.accel.accel_x_G,
+                                                  payload.data.accel.accel_y_G,
+                                                  payload.data.accel.accel_z_G);
+            if((64 + lg_buff_size) > 512) {
+              stat = f_open(&file, "lgaccel.csv", FA_WRITE|FA_OPEN_APPEND);
+              stat = f_write(&file, lg_buff, 512, &bytes_written);
+              stat = f_close(&file);
+              memcpy(lg_buff, data, 64);
+              lg_buff_size = 64;
+            } else {
+              memcpy(lg_buff + lg_buff_size, data, 64);
+              lg_buff_size += 64;
+            }
+            memcpy(data, null_buff, 64);
+            break;
+          case SENSOR_GYRO:
+            snprintf(data, 100, "%d:%d:%s,%d,%d,%d\n", payload.time.Hours,
+                                                  payload.time.Minutes,
+                                                  seconds_buf,
+                                                  payload.data.gyro.pitch_dps,
+                                                  payload.data.gyro.roll_dps,
+                                                  payload.data.gyro.yaw_dps);
+            if((64 + gyro_buff_size) > 512) {
+              stat = f_open(&file, "gyro.csv", FA_WRITE|FA_OPEN_APPEND);
+              stat = f_write(&file, gyro_buff, 512, &bytes_written);
+              stat = f_close(&file);
+              memcpy(gyro_buff, data, 64);
+              gyro_buff_size = 64;
+            } else {
+              memcpy(gyro_buff + gyro_buff_size, data, 64);
+              gyro_buff_size += 64;
+            }
+            memcpy(data, null_buff, 64);
+            break;
+          case SENSOR_BAROMETER:
+            snprintf(data, 100, "%d:%d:%s,%d,%d\n", payload.time.Hours,
+                                                  payload.time.Minutes,
+                                                  seconds_buf,
+                                                  payload.data.baro_data.pressure,
+                                                  payload.data.baro_data.temperature);
+            if((64 + baro_buff_size) > 512) {
+              stat = f_open(&file, "baro.csv", FA_WRITE | FA_OPEN_APPEND);
+              stat = f_write(&file, baro_buff, 512, &bytes_written);
+              stat = f_close(&file);
+              memcpy(baro_buff, data, 64);
+              baro_buff_size = 64;
+            } else {
+              memcpy(baro_buff + baro_buff_size, data, 64);
+              baro_buff_size += 64;
+            }
+            memcpy(data, null_buff, 64);
+            break;
+          default:
+            break;
+        }
       }
-
-      stat = f_open(&file, log_file_path, FA_WRITE|FA_OPEN_APPEND);
-      stat = f_write(&file, data, size, &bytes_written);
-      stat = f_close(&file);
     }
   }
   /* USER CODE END fileManagementTask */
@@ -135,7 +204,7 @@ static inline void mk_log_dir(void){
     f_close(&file);
   }
 
-  sprintf(buff, "logs-%d", open_count);
+  sprintf(buff, "logs%d", open_count);
   stat = f_mkdir(buff);
   stat = f_chdir(buff);
 }

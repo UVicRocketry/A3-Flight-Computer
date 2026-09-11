@@ -177,8 +177,8 @@ HAL_StatusTypeDef BMP581_get_temperature_pressure(BaroData_t *pbarodata){
 
     BMP581_read_mult_byte(BMP581_TEMP_DATA_0, data, 6);
 
-    pbarodata->temperature = (int32_t)( data[2] << 16 | data[1] << 8 | data[0]);
-    pbarodata->pressure = (int32_t)( data[5] << 16 | data[4] << 8 | data[3]);
+    pbarodata->temperature = (int32_t)(data[2] << 16 | data[1] << 8 | data[0]);
+    pbarodata->pressure = (int32_t)(data[5] << 16 | data[4] << 8 | data[3]);
     
     return HAL_OK;
 }
